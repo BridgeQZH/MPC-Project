@@ -29,10 +29,10 @@ class Quadrotor(object):
         self.w = 0.0
 
         # Quadrotor Parameters
-        self.m = 0.2            # quadrotor mass
-        self.M_x = None         # Inertia along x-axis
-        self.M_y = None         # Inertia along y-axis
-        self.M_z = None         # Inertia along z-axis
+        self.m = 1.4            # quadrotor mass
+        self.M_x = 0.001         # Inertia along x-axis
+        self.M_y = 0.001         # Inertia along y-axis
+        self.M_z = 0.005         # Inertia along z-axis
 
         # Aggregated terms
         
@@ -41,7 +41,7 @@ class Quadrotor(object):
         self.v = np.zeros(3,1)               # velocity state
         self.alpha = np.zeros(3,1)           # orientation state
         self.omega = np.zeros(3,1)           # angular velocity state
-        self.x_eq = np.vstack((self.p, self.v, self.alpha, self.omega))     # system state
+        self.x_eq = np.vstack((self.p, self.v, self.alpha, self.omega))     # system state vertical stack
         self.u_eq = np.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
         self.Integrator = None
 
@@ -53,24 +53,17 @@ class Quadrotor(object):
 
     def __str__(self):
         return """                                                                  
-                ,@@,                                                            
-              @@@@@@@@                                                          
-              @@@ m @@                                                         
-               .@@@@&                                                          
-                     *                   .                                      
-                      (#       theta     .                                   
-                       ,* *              .                                   
-                         */              .                                      
-                          (*             .                                      
-                            *,           .                                      
-                             #(          .                                      
-           Y               l   *         .                                      
-           ^                    ##       .                                      
-           |                     .*      .                                      
-           |                       /(    .                                      
-           |                        /*   .                                      
-           +-------> X                *, .                                      
-                                       %/.                                                     
+                                                 
+                     Z                                                 
+                     ^                                                      
+                     |                                                      
+                     |                                                         
+                     |                                                   
+                     +-------> X                                                  
+                    -                           
+                   -
+                  -
+             Y  <-                                               
             -----------------------------------------------------------      """
 
     def set_integrators(self):
@@ -120,37 +113,78 @@ class Quadrotor(object):
         quadrotor continuous-time linearized dynamics.
 
         :param x: state
-        :type x: MX variable, 4x1
+        :type x: MX variable, 12x1
         :param u: control input
-        :type u: MX variable, 1x1
+        :type u: MX variable, 4x1
         :return: dot(x)
-        :rtype: MX variable, 4x1
+        :rtype: MX variable, 12x1
         """
         theta = self.alpha[0,0]
         phi = self.alpha[1,0]
         psi = self.alpha[2,0]
 
+        w_x = self.omega_d[0,0]
+        w_y = self.omega_d[1,0]
+        w_z = self.omega_d[2,0]
+
+        f_z = u
+        # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
         J_a = ca.MX.zeros(3,3)
         J_b = ca.MX.zeros(3,3)
         J_c = ca.MX.zeros(3,3)
         J_d = ca.MX.zeros(3,3)
-
-        J_a[0,1] = ca.cos(phi)
+        # TODO: Need to multiply f_z/m 
+        J_a[0,1] = ca.cos(phi)  
         J_a[1,0] = -ca.cos(theta) * ca.cos(phi)
         J_a[1,1] = ca.sin(theta) * ca.sin(theta)
         J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
         J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
+        J_a *= f_z / self.m
 
+        J_b[0,0] = (1.0/ca.cos(theta))^2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
+        J_b[1,1] = - w_y * ca.sin(phi) - w_z * ca.cos(phi)
+        J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(phi) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[2,1] = (1.0 / ca.cos(theta)) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
         
+        J_c[0,0] = 1.0
+        J_c[0,1] = ca.sin(phi) * ca.tan(theta)
+        J_c[0,2] = ca.cos(phi) * ca.tan(theta)
+        J_c[1,1] = ca.cos(phi)
+        J_c[1,2] = -ca.sin(theta)
+        J_c[2,1] = 1.0 / ca.cos(theta) * sin(phi)
+        J_c[2,2] = 1.0 / ca.cos(theta) * cos(phi)
+
+        J_d[0,1] = w_z * (self.M_y - self.M_z) / self.M_x
+        J_d[0,2] = w_y * (self.M_y - self.M_z) / self.M_x
+        J_d[1,0] = w_z * (self.M_z - self.M_x) / self.M_y
+        J_d[1,2] = w_x * (self.M_z - self.M_x) / self.M_y
+        J_d[2,0] = w_y * (self.M_x - self.M_y) / self.M_x
+        J_d[2,1] = w_x * (self.M_x - self.M_y) / self.M_z
+
         ### Build Ac matrix
-        Ac[3:6,3:6] = ca.MX.eye(3)
-        Ac[1,0] = -self.a0
-        Ac[1,1] = -self.a1
+        Ac[0:3,3:6] = ca.MX.eye(3)
+        Ac[3:6,6:9] = J_a 
+        Ac[6:9,6:9] = J_b
+        Ac[6:9,9:12] = J_c
+        Ac[9:12,9:12] = J_d
 
         ### Build Bc matrix
-        Bc[1,0] = self.b0
+        J_e = ca.MX.zeros(3,1)
+        J_f = ca.MX.zeros(3,3)
+
+        J_e[0,0] = ca.sin(phi)/self.m
+        J_e[1,0] = -ca.sin(theta)*ca.cos(phi)/self.m
+        J_e[2,0] = ca.cos(theta)*ca.cos(phi)/self.m
+
+        J_f[0,0] = 1/self.M_x
+        J_f[1,1] = 1/self.M_y
+        J_f[2,2] = 1/self.M_z
+
+        Bc[3:6,0] = J_e
+        Bc[9:12,1:4] = J_f
 
         ### Store matrices as class variables
         self.Ac = Ac
@@ -161,11 +195,11 @@ class Quadrotor(object):
     def set_quadrotor_nl_dynamics(self, x, u):
         """quadrotor nonlinear dynamics
 
-        :param x: state, 2x1
+        :param x: state, 12x1
         :type x: ca.MX
-        :param u: control input, 1x1
+        :param u: control input, 4x1
         :type u: ca.MX
-        :return: state time derivative, 2x1
+        :return: state time derivative, 12x1
         :rtype: ca.MX
         """
 
@@ -194,9 +228,8 @@ class Quadrotor(object):
         B_eq = self.Bd(self.x_eq, self.u_eq)
         
         # Populate a full observation matrix
-        C_eq = ca.DM.zeros(1,2)
-        C_eq[0,0] = 1
-        C_eq[0,1] = 1
+        C_eq = ca.DM.zeros(1,12) + 1
+        
 
         return A_eq, B_eq, C_eq
 
@@ -260,7 +293,7 @@ class Quadrotor(object):
     pass
 
 
-class quadrotor(object):
+class Quadrotor_nl(object):
     def __init__(self, h=0.1):
         """
         quadrotor model class. 
