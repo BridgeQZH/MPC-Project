@@ -21,11 +21,11 @@ class Quadrotor(object):
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
-        self.p_d = np.zeros(3,1)               # position reference
-        self.v_d = np.zeros(3,1)               # velocity reference
-        self.alpha_d = np.zeros(3,1)           # orientation reference
-        self.omega_d = np.zeros(3,1)           # angular velocity reference
-        self.x_d = np.vstack((self.p_d, self.v_d, self.alpha_d, self.omega_d))        # system state reference
+        self.p_d = ca.DM.zeros(3,1)               # position reference
+        self.v_d = ca.DM.zeros(3,1)               # velocity reference
+        self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
+        self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
+        self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
         self.w = 0.0
 
         # Quadrotor Parameters
@@ -37,12 +37,12 @@ class Quadrotor(object):
         # Aggregated terms
         
         # Linearize system around vertical equilibrium with no input
-        self.p = np.zeros(3,1)               # position state
-        self.v = np.zeros(3,1)               # velocity state
-        self.alpha = np.zeros(3,1)           # orientation state
-        self.omega = np.zeros(3,1)           # angular velocity state
-        self.x_eq = np.vstack((self.p, self.v, self.alpha, self.omega))     # system state vertical stack
-        self.u_eq = np.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
+        self.p = ca.DM.zeros(3,1)               # position state
+        self.v = ca.DM.zeros(3,1)               # velocity state
+        self.alpha = ca.DM.zeros(3,1)           # orientation state
+        self.omega = ca.DM.zeros(3,1)           # angular velocity state
+        self.x_eq = ca.vertcat(self.p, self.v, self.alpha, self.omega)     # system state vertical stack
+        self.u_eq = ca.DM.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
         self.Integrator = None
 
         self.set_integrators()
@@ -84,8 +84,8 @@ class Quadrotor(object):
         self.Integrator = ca.integrator('integrator', 'cvodes', dae, options)
 
         # Create nonlinear dynamics integrator
-        dae = {'x': x, 'ode': self.set_quadrotor_nl_dynamics(x,u), 'p':ca.vertcat(u)}
-        self.Integrator_nl = ca.integrator('integrator', 'cvodes', dae, options)
+        # dae = {'x': x, 'ode': self.set_quadrotor_nl_dynamics(x,u), 'p':ca.vertcat(u)}
+        # self.Integrator_nl = ca.integrator('integrator', 'cvodes', dae, options)
 
     def set_discrete_time_system(self):
         """
@@ -127,7 +127,7 @@ class Quadrotor(object):
         w_y = self.omega_d[1,0]
         w_z = self.omega_d[2,0]
 
-        f_z = u
+        f_z = u[0,0]
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
@@ -143,7 +143,7 @@ class Quadrotor(object):
         J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
         J_a *= f_z / self.m
 
-        J_b[0,0] = (1.0/ca.cos(theta))^2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[0,0] = (1.0/ca.cos(theta))**2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
         J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
         J_b[1,1] = - w_y * ca.sin(phi) - w_z * ca.cos(phi)
         J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(phi) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
@@ -154,8 +154,8 @@ class Quadrotor(object):
         J_c[0,2] = ca.cos(phi) * ca.tan(theta)
         J_c[1,1] = ca.cos(phi)
         J_c[1,2] = -ca.sin(theta)
-        J_c[2,1] = 1.0 / ca.cos(theta) * sin(phi)
-        J_c[2,2] = 1.0 / ca.cos(theta) * cos(phi)
+        J_c[2,1] = 1.0 / ca.cos(theta) * ca.sin(phi)
+        J_c[2,2] = 1.0 / ca.cos(theta) * ca.cos(phi)
 
         J_d[0,1] = w_z * (self.M_y - self.M_z) / self.M_x
         J_d[0,2] = w_y * (self.M_y - self.M_z) / self.M_x
