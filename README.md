@@ -11,5 +11,7 @@ https://www.overleaf.com/4558246567cszckmxgcntc
 
 * Code Implementation
     > Change linear pendulum model from the assignment to linear quadrotor model in this project.
+
     > Discretize the linear model to get discrete time dynamics.
+    
     > Simulation.(Q2)

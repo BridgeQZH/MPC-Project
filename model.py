@@ -2,12 +2,12 @@ import casadi as ca
 import numpy as np
 from filterpy.kalman import KalmanFilter
 
-class SimplePendulum(object):
+class Quadrotor(object):
     def __init__(self, h=0.1):
         """
-        Pendulum model class. 
+        quadrotor model class. 
         
-        Describes the movement of a pendulum with mass 'm' attached to a cart
+        Describes the movement of a quadrotor with mass 'm' attached to a cart
         with mass 'M'. All methods should return casadi.MX or casadi.DM variable 
         types.
 
@@ -16,34 +16,39 @@ class SimplePendulum(object):
         """
 
         # Model, gravity and sampling time parameters
-        self.model = self.pendulum_linear_dynamics
+        self.model = self.quadrotor_linear_dynamics
         self.g = 9.81
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
-        self.x_d = 10
+        self.p_d = np.zeros(3,1)               # position reference
+        self.v_d = np.zeros(3,1)               # velocity reference
+        self.alpha_d = np.zeros(3,1)           # orientation reference
+        self.omega_d = np.zeros(3,1)           # angular velocity reference
+        self.x_d = np.vstack((self.p_d, self.v_d, self.alpha_d, self.omega_d))        # system state reference
         self.w = 0.0
 
-        # Pendulum Parameters
-        self.m = 0.2
-        self.I = 0.006
-        self.l = 0.3
-        self.bp = 0.012
+        # Quadrotor Parameters
+        self.m = 0.2            # quadrotor mass
+        self.M_x = None         # Inertia along x-axis
+        self.M_y = None         # Inertia along y-axis
+        self.M_z = None         # Inertia along z-axis
 
         # Aggregated terms
-        self.a0 = -(self.m*self.g*self.l)/(self.I+self.m*self.l**2);
-        self.a1 = self.bp/(self.I+self.m*self.l**2);
-        self.b0 = (self.m*self.l)/(self.I+self.m*self.l**2);
         
         # Linearize system around vertical equilibrium with no input
-        self.x_eq = [0,0]
-        self.u_eq = 0
+        self.p = np.zeros(3,1)               # position state
+        self.v = np.zeros(3,1)               # velocity state
+        self.alpha = np.zeros(3,1)           # orientation state
+        self.omega = np.zeros(3,1)           # angular velocity state
+        self.x_eq = np.vstack((self.p, self.v, self.alpha, self.omega))     # system state
+        self.u_eq = np.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
         self.Integrator = None
 
         self.set_integrators()
         self.set_discrete_time_system()
 
-        print("Pendulum class initialized")
+        print("quadrotor class initialized")
         print(self)                         # You can comment this line
 
     def __str__(self):
@@ -74,8 +79,8 @@ class SimplePendulum(object):
         """
         
         # Set CasADi variables
-        x = ca.MX.sym('x', 2)
-        u = ca.MX.sym('u', 1)
+        x = ca.MX.sym('x', 12)
+        u = ca.MX.sym('u', 4)
 
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
@@ -86,7 +91,7 @@ class SimplePendulum(object):
         self.Integrator = ca.integrator('integrator', 'cvodes', dae, options)
 
         # Create nonlinear dynamics integrator
-        dae = {'x': x, 'ode': self.set_pendulum_nl_dynamics(x,u), 'p':ca.vertcat(u)}
+        dae = {'x': x, 'ode': self.set_quadrotor_nl_dynamics(x,u), 'p':ca.vertcat(u)}
         self.Integrator_nl = ca.integrator('integrator', 'cvodes', dae, options)
 
     def set_discrete_time_system(self):
@@ -100,8 +105,8 @@ class SimplePendulum(object):
             exit()
 
         # Set CasADi variables
-        x = ca.MX.sym('x', 2)
-        u = ca.MX.sym('u', 1)
+        x = ca.MX.sym('x', 12)
+        u = ca.MX.sym('u', 4)
     
         # Jacobian of exact discretization
         self.Ad = ca.Function('jac_x_Ad', [x, u], [ca.jacobian(
@@ -110,9 +115,9 @@ class SimplePendulum(object):
                             self.Integrator(x0=x, p=u)['xf'], u)])
 
 
-    def pendulum_linear_dynamics(self, x, u):  
+    def quadrotor_linear_dynamics(self, x, u):  
         """ 
-        Pendulum continuous-time linearized dynamics.
+        quadrotor continuous-time linearized dynamics.
 
         :param x: state
         :type x: MX variable, 4x1
@@ -121,20 +126,30 @@ class SimplePendulum(object):
         :return: dot(x)
         :rtype: MX variable, 4x1
         """
+        theta = self.alpha[0,0]
+        phi = self.alpha[1,0]
+        psi = self.alpha[2,0]
 
-        Ac = ca.MX.zeros(2,2)
-        Bc = ca.MX.zeros(2,1)
+        Ac = ca.MX.zeros(12,12)
+        Bc = ca.MX.zeros(12,4)
+        J_a = ca.MX.zeros(3,3)
+        J_b = ca.MX.zeros(3,3)
+        J_c = ca.MX.zeros(3,3)
+        J_d = ca.MX.zeros(3,3)
 
+        J_a[0,1] = ca.cos(phi)
+        J_a[1,0] = -ca.cos(theta) * ca.cos(phi)
+        J_a[1,1] = ca.sin(theta) * ca.sin(theta)
+        J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
+        J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
+
+        
         ### Build Ac matrix
-        # First Row
-        Ac[0,1] = 1
-
-        # Second row
+        Ac[3:6,3:6] = ca.MX.eye(3)
         Ac[1,0] = -self.a0
         Ac[1,1] = -self.a1
 
         ### Build Bc matrix
-        # Second Row
         Bc[1,0] = self.b0
 
         ### Store matrices as class variables
@@ -143,8 +158,8 @@ class SimplePendulum(object):
 
         return Ac @ x + Bc @ u  
 
-    def set_pendulum_nl_dynamics(self, x, u):
-        """Pendulum nonlinear dynamics
+    def set_quadrotor_nl_dynamics(self, x, u):
+        """quadrotor nonlinear dynamics
 
         :param x: state, 2x1
         :type x: ca.MX
@@ -245,12 +260,12 @@ class SimplePendulum(object):
     pass
 
 
-class Pendulum(object):
+class quadrotor(object):
     def __init__(self, h=0.1):
         """
-        Pendulum model class. 
+        quadrotor model class. 
         
-        Describes the movement of a pendulum with mass 'm' attached to a cart
+        Describes the movement of a quadrotor with mass 'm' attached to a cart
         with mass 'M'. All methods should return casadi.MX or casadi.DM variable 
         types.
 
@@ -259,9 +274,9 @@ class Pendulum(object):
         """
 
         # Model, gravity and sampling time parameters
-        self.model = self.pendulum_linear_dynamics
-        self.model_nl = self.pendulum_nonlinear_dynamics
-        self.model_ag = self.pendulum_augmented_dynamics
+        self.model = self.quadrotor_linear_dynamics
+        self.model_nl = self.quadrotor_nonlinear_dynamics
+        self.model_ag = self.quadrotor_augmented_dynamics
         self.g = 9.81
         self.dt = h
 
@@ -269,7 +284,7 @@ class Pendulum(object):
         self.x_d = 10
         self.w = 0.0
 
-        # Pendulum Parameters
+        # quadrotor Parameters
         self.m = 0.2
         self.M = 0.5
         self.I = 0.006
@@ -289,7 +304,7 @@ class Pendulum(object):
         self.set_discrete_time_system()
         self.set_augmented_discrete_system()
 
-        print("Pendulum class initialized")
+        print("quadrotor class initialized")
         print(self)                         # You can comment this line
 
     def __str__(self):
@@ -386,7 +401,7 @@ class Pendulum(object):
     
     def set_augmented_discrete_system(self):
         """
-        Pendulum dynamics with integral action.
+        quadrotor dynamics with integral action.
 
         :param x: state
         :type x: casadi.DM
@@ -418,9 +433,9 @@ class Pendulum(object):
 
         self.Cd_i[0,0:4] = self.Cd_eq
 
-    def pendulum_linear_dynamics(self, x, u, w):  
+    def quadrotor_linear_dynamics(self, x, u, w):  
         """ 
-        Pendulum continuous-time linearized dynamics.
+        quadrotor continuous-time linearized dynamics.
 
         :param x: state
         :type x: MX variable, 4x1
@@ -473,16 +488,16 @@ class Pendulum(object):
 
         return Ac @ x + Bc @ u + Bwc @ w
 
-    def pendulum_linear_dynamics_with_disturbance(self, x, u):
+    def quadrotor_linear_dynamics_with_disturbance(self, x, u):
         Ad_eq = self.Ad(self.x_eq, self.u_eq, self.w)
         Bd_eq = self.Bd(self.x_eq, self.u_eq, self.w)
         Bw_eq = self.Bw(self.x_eq, self.u_eq, self.w)
 
         return Ad_eq @ x + Bd_eq @ u + Bw_eq @ self.w 
 
-    def pendulum_nonlinear_dynamics(self, x, u, *_):
+    def quadrotor_nonlinear_dynamics(self, x, u, *_):
         """
-        Pendulum nonlinear dynamics.
+        quadrotor nonlinear dynamics.
 
         :param x: state
         :type x: casadi.DM or casadi.MX
@@ -521,8 +536,8 @@ class Pendulum(object):
         return ca.vertcat(*dxdt)
 
 
-    def pendulum_augmented_dynamics(self, x, u):
-        """Augmented pendulum system dynamics
+    def quadrotor_augmented_dynamics(self, x, u):
+        """Augmented quadrotor system dynamics
 
         :param x: state
         :type x: casadi.DM
