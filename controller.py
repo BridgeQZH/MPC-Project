@@ -106,9 +106,14 @@ class Controller(object):
 
         if L is None:
             L = self.L
-
+        self.lrd = ca.DM.zeros(4,1)
+        self.lr = ca.DM.zeros(4,1)
         self.lrd = self.C @ ca.inv(ca.DM.eye(4) - (self.A - self.B @ self.L)) @ self.B
-        self.lr = 1.0 / self.lrd
+        
+        self.lr[0,0] = 1.0 / self.lrd[0,0]
+        self.lr[0,1] = 1.0 / self.lrd[0,1]
+        self.lr[0,2] = 1.0 / self.lrd[0,2]
+        self.lr[0,3] = 1.0 / self.lrd[0,3]
         return self.lr
 
     def control_law(self, x, ref=10.0):

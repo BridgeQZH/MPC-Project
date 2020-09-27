@@ -119,13 +119,9 @@ class Quadrotor(object):
         :return: dot(x)
         :rtype: MX variable, 12x1
         """
-        theta = self.alpha[0,0]
-        phi = self.alpha[1,0]
-        psi = self.alpha[2,0]
 
-        w_x = self.omega_d[0,0]
-        w_y = self.omega_d[1,0]
-        w_z = self.omega_d[2,0]
+        theta, phi, psi = ca.vertsplit(self.alpha)
+        w_x, w_y, w_z = ca.vertsplit(self.omega)
 
         f_z = u[0,0]
         # m = self.m
@@ -230,7 +226,6 @@ class Quadrotor(object):
         # Populate a full observation matrix
         C_eq = ca.DM.zeros(1,12) + 1
         
-
         return A_eq, B_eq, C_eq
 
 
