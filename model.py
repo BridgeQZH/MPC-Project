@@ -171,15 +171,15 @@ class Quadrotor(object):
         J_e = ca.MX.zeros(3,1)
         J_f = ca.MX.zeros(3,3)
 
-        J_e[0,0] = ca.sin(phi)/self.m
-        J_e[1,0] = -ca.sin(theta)*ca.cos(phi)/self.m
+        J_e[0,0] = ca.sin(theta)*ca.sin(psi)+ ca.sin(phi)*ca.cos(psi)*ca.cos(theta)/self.m
+        J_e[1,0] = -ca.sin(theta)*ca.cos(psi)+ ca.sin(phi)*ca.cos(theta)*ca.sin(psi)/self.m
         J_e[2,0] = ca.cos(theta)*ca.cos(phi)/self.m
 
         J_f[0,0] = 1/self.M_x
         J_f[1,1] = 1/self.M_y
         J_f[2,2] = 1/self.M_z
 
-        Bc[3:6,0] = J_e
+        Bc[3:6,3] = J_e
         Bc[9:12,1:4] = J_f
 
         ### Store matrices as class variables
