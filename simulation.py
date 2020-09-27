@@ -127,11 +127,11 @@ class EmbeddedSimEnvironment(object):
                 ax2.set_ylabel("Control [u]")
                 ax2.grid()
 
-                ax3.clear()
-                ax3.plot( t[l_wnd:-1], u_vec[l_wnd:-1], 'b--')
-                ax3.set_xlabel("Time [s]")
-                ax3.set_ylabel("Control [u]")
-                ax3.grid()
+                # ax3.clear()
+                # ax3.plot( t[l_wnd:-1], u_vec[l_wnd:-1], 'b--')
+                # ax3.set_xlabel("Time [s]")
+                # ax3.set_ylabel("Control [u]")
+                # ax3.grid()
 
             elif len(x0) == 2:
                 ax1.clear()
