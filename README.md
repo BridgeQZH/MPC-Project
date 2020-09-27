@@ -14,8 +14,8 @@ https://www.overleaf.com/4558246567cszckmxgcntc
 
     + ~~Discretize the linear model to get discrete time dynamics.~~
     
-    + ~~Modify simulation.py
+    + ~~Modify simulation.py.~~
 
-    + ~~give specific control input and simulate.
+    + ~~give specific control input and simulate.~~
 
     + Add MPC controller and test
