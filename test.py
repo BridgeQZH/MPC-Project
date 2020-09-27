@@ -1,5 +1,11 @@
 import casadi as ca
-# x = ca.MX.sym('x', 12)
-C_eq = ca.DM.zeros(4,1)
-a, b, c, d = ca.vertsplit(C_eq)
-print(a, b, c, d)
+import numpy as np
+y_vec = np.array(x0)
+x = ca.DM(np.size(y_vec,0),1).full()
+x = np.array([y_vec[:,-1]]).T
+print(x)
+
+u_vec = np.array([0.1,0,0,0]).T
+u = ca.DM(np.size(u_vec,0),1).full()
+
+print(u)

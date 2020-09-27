@@ -38,7 +38,7 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([0.1,0,0,0]).T
+        u_vec = np.array([[0.1,0,0,0]]).T
         
         # Start figure
         if len(x0) == 12:
@@ -53,11 +53,14 @@ class EmbeddedSimEnvironment(object):
                 try:
                     # Translate data to ca.DM
                     x = ca.DM(np.size(y_vec,0),1).full()
-                    x =  np.array([y_vec[:,-1]]).T
+                    x = np.array([y_vec[:,-1]]).T
+                    # print(x)
 
                     # Get control input and obtain next state
                     # u = self.controller(x)
-                    u = np.array([0.1,0,0,0]).T
+                    u = ca.DM(np.size(u_vec,0),1).full()
+                    u = np.array([u_vec[:,-1]]).T
+                    # print(u)
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \
@@ -97,7 +100,7 @@ class EmbeddedSimEnvironment(object):
             # Store data
             t = np.append(t,t[-1]+self.dt)
             y_vec = np.append(y_vec, np.array(x_next), axis=1)
-            u_vec = np.append(u_vec, np.array(u))
+            u_vec = np.append(u_vec, np.array(u), axis=1)
 
             # Get plot window values:
             if self.plt_window != float("inf"):
@@ -107,18 +110,21 @@ class EmbeddedSimEnvironment(object):
 
             if len(x0) == 12:
                 ax1.clear()
-                ax1.set_title("Pendulum on Cart - Ref: "+str(self.model.x_d)+" [m]")
+                ax1.set_title("Quadrotor States - Ref: "+str(self.model.x_d)+" [m]")
                 ax1.plot( t[l_wnd:-1], y_vec[0,l_wnd:-1], 'r--', \
-                          t[l_wnd:-1], y_vec[1,l_wnd:-1], 'b--')
-                ax1.legend(["x1","x2"])
-                ax1.set_ylabel("X1 [m] / X2 [m/s]")
+                          t[l_wnd:-1], y_vec[1,l_wnd:-1], 'b--', \
+                          t[l_wnd:-1], y_vec[2,l_wnd:-1], 'g--')
+                ax1.legend(["x","y","z"])
+                ax1.set_ylabel("State[position] / m")
                 ax1.grid()
 
                 ax2.clear()
-                ax2.plot(t[l_wnd:-1], y_vec[2,l_wnd:-1], 'g--', \
-                         t[l_wnd:-1], y_vec[3,l_wnd:-1], 'k--')
-                ax2.legend(["x3","x4"])
-                ax2.set_ylabel("X3 [rad] / X4 [rad/s]")
+                ax2.plot(t[l_wnd:-1], u_vec[0,l_wnd:-1], 'k--', \
+                         t[l_wnd:-1], u_vec[1,l_wnd:-1], 'r--',\
+                         t[l_wnd:-1], u_vec[2,l_wnd:-1], 'b--',\
+                         t[l_wnd:-1], u_vec[3,l_wnd:-1], 'g--')
+                ax2.legend(["fz","tau_x","tau_y","tau_z"])
+                ax2.set_ylabel("Control [u]")
                 ax2.grid()
 
                 # ax3.clear()

@@ -28,5 +28,6 @@ sim_env = EmbeddedSimEnvironment(model=quadrotor,
 #                                 time = 20)
 
 # Also returns time and state evolution
-t, y, u = sim_env.run([0,0,0,0,0,0,0,0,0,0,0,0])
+x0=[0,0,0,0,0,0,0,0,0,0,0,0]
+t, y, u = sim_env.run(x0=x0)
 # t, y, u = sim_env_with_disturbance.run([0,0,0,0])
