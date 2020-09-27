@@ -131,10 +131,13 @@ class Quadrotor(object):
         J_b = ca.MX.zeros(3,3)
         J_c = ca.MX.zeros(3,3)
         J_d = ca.MX.zeros(3,3)
-        # TODO: Need to multiply f_z/m 
-        J_a[0,1] = ca.cos(phi)  
-        J_a[1,0] = -ca.cos(theta) * ca.cos(phi)
-        J_a[1,1] = ca.sin(theta) * ca.sin(theta)
+        
+        J_a[0,0] = ca.cos(theta) * ca.sin(psi) - ca.sin(theta) * ca.sin(phi) * ca.cos(psi)
+        J_a[0,1] = ca.cos(theta) * ca.cos(phi) * ca.cos(psi)
+        J_a[0,2] = ca.sin(theta) * ca.cos(psi) - ca.cos(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,0] = -ca.cos(theta) * ca.cos(phi) - ca.sin(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,1] = ca.cos(theta) * ca.cos(phi) * ca.sin(psi)
+        J_a[1,2] = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)
         J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
         J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
         J_a *= f_z / self.m
