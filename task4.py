@@ -4,15 +4,9 @@ from simulation import EmbeddedSimEnvironment
 
 # Create pendulum and controller objects
 quadrotor = Quadrotor()
-ctl = Controller()
 
 # Get the system discrete-time dynamics
-# A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
-
-# # Get control gains
-# ctl.set_system(A, B, C)
-# K = ctl.get_closed_loop_gain()
-# lr = ctl.get_feedforward_gain(K)
+A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 
 # Initialize simulation environment
 sim_env = EmbeddedSimEnvironment(model=quadrotor, 

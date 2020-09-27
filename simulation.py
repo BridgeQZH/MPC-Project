@@ -42,7 +42,7 @@ class EmbeddedSimEnvironment(object):
         
         # Start figure
         if len(x0) == 12:
-            fig, (ax1,ax2) = plt.subplots(2)
+            fig, (ax1,ax2,ax3) = plt.subplots(3)
         else:
             print("Check your state dimensions.")
             exit()
@@ -54,13 +54,13 @@ class EmbeddedSimEnvironment(object):
                     # Translate data to ca.DM
                     x = ca.DM(np.size(y_vec,0),1).full()
                     x = np.array([y_vec[:,-1]]).T
-                    # print(x)
+                    print(x)
 
                     # Get control input and obtain next state
                     # u = self.controller(x)
                     u = ca.DM(np.size(u_vec,0),1).full()
                     u = np.array([u_vec[:,-1]]).T
-                    # print(u)
+                    print(u)
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \
@@ -119,19 +119,22 @@ class EmbeddedSimEnvironment(object):
                 ax1.grid()
 
                 ax2.clear()
-                ax2.plot(t[l_wnd:-1], u_vec[0,l_wnd:-1], 'k--', \
+                ax2.set_title("Quadrotor States - Ref: "+str(self.model.x_d)+" [m]")
+                ax2.plot( t[l_wnd:-1], y_vec[6,l_wnd:-1], 'r--', \
+                          t[l_wnd:-1], y_vec[7,l_wnd:-1], 'b--', \
+                          t[l_wnd:-1], y_vec[8,l_wnd:-1], 'g--')
+                ax2.legend(["theta","phi","psi"])
+                ax2.set_ylabel("State[orientation] / rad")
+                ax2.grid()
+
+                ax3.clear()
+                ax3.plot(t[l_wnd:-1], u_vec[0,l_wnd:-1], 'k--', \
                          t[l_wnd:-1], u_vec[1,l_wnd:-1], 'r--',\
                          t[l_wnd:-1], u_vec[2,l_wnd:-1], 'b--',\
                          t[l_wnd:-1], u_vec[3,l_wnd:-1], 'g--')
-                ax2.legend(["fz","tau_x","tau_y","tau_z"])
-                ax2.set_ylabel("Control [u]")
-                ax2.grid()
-
-                # ax3.clear()
-                # ax3.plot( t[l_wnd:-1], u_vec[l_wnd:-1], 'b--')
-                # ax3.set_xlabel("Time [s]")
-                # ax3.set_ylabel("Control [u]")
-                # ax3.grid()
+                ax3.legend(["fz","tau_x","tau_y","tau_z"])
+                ax3.set_ylabel("Control [u]")
+                ax3.grid()
 
             elif len(x0) == 2:
                 ax1.clear()

@@ -135,7 +135,7 @@ class Quadrotor(object):
         J_a[0,0] = ca.cos(theta) * ca.sin(psi) - ca.sin(theta) * ca.sin(phi) * ca.cos(psi)
         J_a[0,1] = ca.cos(theta) * ca.cos(phi) * ca.cos(psi)
         J_a[0,2] = ca.sin(theta) * ca.cos(psi) - ca.cos(theta) * ca.sin(phi) * ca.sin(psi)
-        J_a[1,0] = -ca.cos(theta) * ca.cos(phi) - ca.sin(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,0] = -ca.cos(theta) * ca.cos(psi) - ca.sin(theta) * ca.sin(phi) * ca.sin(psi)
         J_a[1,1] = ca.cos(theta) * ca.cos(phi) * ca.sin(psi)
         J_a[1,2] = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)
         J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
@@ -145,14 +145,14 @@ class Quadrotor(object):
         J_b[0,0] = (1.0/ca.cos(theta))**2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
         J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
         J_b[1,1] = - w_y * ca.sin(phi) - w_z * ca.cos(phi)
-        J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(phi) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(theta) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
         J_b[2,1] = (1.0 / ca.cos(theta)) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
         
         J_c[0,0] = 1.0
         J_c[0,1] = ca.sin(phi) * ca.tan(theta)
         J_c[0,2] = ca.cos(phi) * ca.tan(theta)
         J_c[1,1] = ca.cos(phi)
-        J_c[1,2] = -ca.sin(theta)
+        J_c[1,2] = -ca.sin(phi)
         J_c[2,1] = 1.0 / ca.cos(theta) * ca.sin(phi)
         J_c[2,2] = 1.0 / ca.cos(theta) * ca.cos(phi)
 
@@ -160,7 +160,7 @@ class Quadrotor(object):
         J_d[0,2] = w_y * (self.M_y - self.M_z) / self.M_x
         J_d[1,0] = w_z * (self.M_z - self.M_x) / self.M_y
         J_d[1,2] = w_x * (self.M_z - self.M_x) / self.M_y
-        J_d[2,0] = w_y * (self.M_x - self.M_y) / self.M_x
+        J_d[2,0] = w_y * (self.M_x - self.M_y) / self.M_z
         J_d[2,1] = w_x * (self.M_x - self.M_y) / self.M_z
 
         ### Build Ac matrix
@@ -174,13 +174,13 @@ class Quadrotor(object):
         J_e = ca.MX.zeros(3,1)
         J_f = ca.MX.zeros(3,3)
 
-        J_e[0,0] = ca.sin(theta)*ca.sin(psi)+ ca.sin(phi)*ca.cos(psi)*ca.cos(theta)/self.m
-        J_e[1,0] = -ca.sin(theta)*ca.cos(psi)+ ca.sin(phi)*ca.cos(theta)*ca.sin(psi)/self.m
+        J_e[0,0] = (ca.sin(theta)*ca.sin(psi)+ ca.sin(phi)*ca.cos(psi)*ca.cos(theta))/self.m
+        J_e[1,0] = (-ca.sin(theta)*ca.cos(psi)+ ca.sin(phi)*ca.cos(theta)*ca.sin(psi))/self.m
         J_e[2,0] = ca.cos(theta)*ca.cos(phi)/self.m
 
-        J_f[0,0] = 1/self.M_x
-        J_f[1,1] = 1/self.M_y
-        J_f[2,2] = 1/self.M_z
+        J_f[0,0] = 1.0/self.M_x
+        J_f[1,1] = 1.0/self.M_y
+        J_f[2,2] = 1.0/self.M_z
 
         Bc[3:6,0] = J_e
         Bc[9:12,1:4] = J_f
@@ -189,7 +189,22 @@ class Quadrotor(object):
         self.Ac = Ac
         self.Bc = Bc 
 
-        return Ac @ x + Bc @ u  
+        # # Transfromation matrix from body frame to inertia frame for angular velocity.
+        # T = ca.MX.zeros(3,3)
+        # T[0,0] = 1
+        # T[0,1] = (ca.sin(phi)*ca.sin(theta))/(ca.cos(phi))
+        # T[0,2] =  (ca.cos(theta)*ca.sin(phi))/(ca.cos(phi))
+        # T[1,1] =  ca.cos(theta)
+        # T[1,2] = -ca.sin(theta)
+        # T[2,1] =  ca.sin(theta)/(ca.cos(phi))
+        # T[2,2] = ca.cos(theta)/(ca.cos(phi))
+        # temp = ca.MX.zeros(12,1)
+        # omega_dot = ca.MX.zeros(3,1)
+        # temp = Ac @ x + Bc @ u
+        # omega_dot = T @ temp[9:12,0]
+        # result = ca.vertcat(temp[0:9,0],omega_dot)
+
+        return Ac @ x + Bc @ u
 
     def set_quadrotor_nl_dynamics(self, x, u):
         """quadrotor nonlinear dynamics
