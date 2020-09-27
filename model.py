@@ -182,7 +182,7 @@ class Quadrotor(object):
         J_f[1,1] = 1/self.M_y
         J_f[2,2] = 1/self.M_z
 
-        Bc[3:6,3] = J_e
+        Bc[3:6,0] = J_e
         Bc[9:12,1:4] = J_f
 
         ### Store matrices as class variables
