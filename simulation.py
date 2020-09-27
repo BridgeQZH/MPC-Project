@@ -5,7 +5,7 @@ import time
 
 class EmbeddedSimEnvironment(object):
     
-    def __init__(self, model, dynamics, controller, time=100.0):
+    def __init__(self, model, dynamics, controller=None, time=100.0):
         """
         Embedded simulation environment. Simulates the syste given dynamics 
         and a control law, plots in matplotlib.
@@ -29,7 +29,7 @@ class EmbeddedSimEnvironment(object):
         # Plotting definitions 
         self.plt_window = float("inf")    # running plot window, in seconds, or float("inf")
 
-    def run(self, x0=[0,0,0,0]):
+    def run(self, x0=[0,0,0,0,0,0,0,0,0,0,0,0]):
         """
         Run simulator with specified system dynamics and control function.
         """
@@ -38,12 +38,10 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([0])
+        u_vec = np.array([0.1,0,0,0]).T
         
         # Start figure
-        if len(x0) == 4:
-            fig, (ax1,ax2,ax3) = plt.subplots(3)
-        elif len(x0) == 2:
+        if len(x0) == 12:
             fig, (ax1,ax2) = plt.subplots(2)
         else:
             print("Check your state dimensions.")
@@ -58,7 +56,8 @@ class EmbeddedSimEnvironment(object):
                     x =  np.array([y_vec[:,-1]]).T
 
                     # Get control input and obtain next state
-                    u = self.controller(x)
+                    # u = self.controller(x)
+                    u = np.array([0.1,0,0,0]).T
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \
@@ -106,7 +105,7 @@ class EmbeddedSimEnvironment(object):
             else:  
                 l_wnd = 0
 
-            if len(x0) == 4:
+            if len(x0) == 12:
                 ax1.clear()
                 ax1.set_title("Pendulum on Cart - Ref: "+str(self.model.x_d)+" [m]")
                 ax1.plot( t[l_wnd:-1], y_vec[0,l_wnd:-1], 'r--', \
@@ -122,11 +121,11 @@ class EmbeddedSimEnvironment(object):
                 ax2.set_ylabel("X3 [rad] / X4 [rad/s]")
                 ax2.grid()
 
-                ax3.clear()
-                ax3.plot( t[l_wnd:-1], u_vec[l_wnd:-1], 'b--')
-                ax3.set_xlabel("Time [s]")
-                ax3.set_ylabel("Control [u]")
-                ax3.grid()
+                # ax3.clear()
+                # ax3.plot( t[l_wnd:-1], u_vec[l_wnd:-1], 'b--')
+                # ax3.set_xlabel("Time [s]")
+                # ax3.set_ylabel("Control [u]")
+                # ax3.grid()
 
             elif len(x0) == 2:
                 ax1.clear()
