@@ -38,7 +38,7 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([[0.1,0,0,0]]).T
+        u_vec = np.array([[0.1,-0.001,0,0]]).T
         
         # Start figure
         if len(x0) == 12:
