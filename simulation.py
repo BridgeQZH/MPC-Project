@@ -38,7 +38,7 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([[0.1,-0.0001,0,0]]).T
+        u_vec = np.array([[0.1,-0.001,0,0]]).T
         
         # Start figure
         if len(x0) == 12:
@@ -119,7 +119,6 @@ class EmbeddedSimEnvironment(object):
                 ax1.grid()
 
                 ax2.clear()
-                ax2.set_title("Quadrotor States - Ref: "+str(self.model.x_d)+" [m]")
                 ax2.plot( t[l_wnd:-1], y_vec[6,l_wnd:-1], 'r--', \
                           t[l_wnd:-1], y_vec[7,l_wnd:-1], 'b--', \
                           t[l_wnd:-1], y_vec[8,l_wnd:-1], 'g--')
