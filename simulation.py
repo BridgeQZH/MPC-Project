@@ -38,7 +38,7 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([[0.1,-0.001,0,0]]).T
+        u_vec = np.array([[0.1,0,0,0]]).T
         
         # Start figure
         if len(x0) == 12:
@@ -54,13 +54,13 @@ class EmbeddedSimEnvironment(object):
                     # Translate data to ca.DM
                     x = ca.DM(np.size(y_vec,0),1).full()
                     x = np.array([y_vec[:,-1]]).T
-                    print(x)
+                    # print(x)
 
                     # Get control input and obtain next state
                     # u = self.controller(x)
                     u = ca.DM(np.size(u_vec,0),1).full()
                     u = np.array([u_vec[:,-1]]).T
-                    print(u)
+                    # print(u)
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \

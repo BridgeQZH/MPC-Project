@@ -123,7 +123,7 @@ class Quadrotor(object):
         theta, phi, psi = ca.vertsplit(self.alpha)
         w_x, w_y, w_z = ca.vertsplit(self.omega)
 
-        f_z = self.g    # input control at equilibrium point
+        f_z = self.g * self.m   # input control at equilibrium point
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
