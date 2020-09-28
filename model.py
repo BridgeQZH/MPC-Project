@@ -140,7 +140,7 @@ class Quadrotor(object):
         J_a[1,2] = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)
         J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
         J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
-        J_a *= f_z / self.m
+        J_a *= f_z / self.m + self.g            # If minus g, the result is contradictive to the project guideline. Hence, here I use plus notation.
 
         J_b[0,0] = (1.0/ca.cos(theta))**2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
         J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))

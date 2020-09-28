@@ -12,7 +12,7 @@ A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 sim_env = EmbeddedSimEnvironment(model=quadrotor, 
                                 dynamics=quadrotor.discrete_time_dynamics,
                                 # controller=ctl.control_law,
-                                time = 20)
+                                time = 2)
 
 # Enable model disturbance for second simulation environment
 # pendulum.enable_disturbance(w=0.01)
