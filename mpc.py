@@ -103,7 +103,7 @@ class MPC(object):
 
 
         """ Set initial values """
-        obj = ca.MX(0)
+        obj = ca.MX(0) # Only a number 0
         con_eq = []
         con_ineq = []
         con_ineq_lb = []
@@ -202,7 +202,7 @@ class MPC(object):
         
         # Create functions and function variables for calculating the cost
         Q = ca.MX.sym('Q', self.Nx, self.Nx)
-        R = ca.MX.sym('R', self.Nu)
+        R = ca.MX.sym('R', self.Nu, self.Nu)
         P = ca.MX.sym('P', self.Nx, self.Nx)
         
         x = ca.MX.sym('x', self.Nx)
