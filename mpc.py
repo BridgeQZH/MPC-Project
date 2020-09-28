@@ -48,7 +48,8 @@ class MPC(object):
 
         build_solver_time = -time.time()
         self.dt = model.dt
-        self.Nx, self.Nu = len(model.x_eq), 1
+        # self.Nx, self.Nu = len(model.x_eq), 1
+        self.Nx, self.Nu = 12, 4
         Nopt = self.Nu + self.Nx
         self.Nt = int(horizon /self.dt)
         self.dynamics = dynamics

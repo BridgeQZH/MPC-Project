@@ -25,9 +25,9 @@ ctl = MPC(model=quadrotor,
         dynamics=quadrotor.discrete_time_dynamics, 
         Q = Q , R = R, P = P,
         horizon=7,
-        ulb=-20, uub=20, 
-        xlb=[-np.pi/2, -np.pi/2], 
-        xub=[np.pi/2, np.pi/2],
+        ulb=None, uub=None, 
+        xlb=None, 
+        xub=None,
         terminal_constraint=None)
 
 # Part II - Simple Inverted Pendulum
