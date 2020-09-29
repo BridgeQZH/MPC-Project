@@ -364,7 +364,7 @@ class Quadrotor_Integrator(object):
 
         self.set_integrators()
         self.set_discrete_time_system()
-        self.set_augmented_discrete_system()
+        # self.set_augmented_discrete_system()
 
         print("quadrotor class initialized")
         print(self)                         # You can comment this line
@@ -498,6 +498,8 @@ class Quadrotor_Integrator(object):
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
+        Bwc = ca.MX.zeros(12,1)
+
         J_a = ca.MX.zeros(3,3)
         J_b = ca.MX.zeros(3,3)
         J_c = ca.MX.zeros(3,3)
@@ -613,10 +615,10 @@ class Quadrotor_Integrator(object):
         f3 = ca.cos(theta) * ca.cos(phi) * f_z / self.m - self.g
 
         # dot(theta)
-        f4 = w_x + ca.tan(theta) * (w_y * ca.sin(phi) + w_z * cos(phi))
+        f4 = w_x + ca.tan(theta) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
 
         # dot(phi)
-        f5 = w_y * ca.cos(phi) - w_z * sin(phi)
+        f5 = w_y * ca.cos(phi) - w_z * ca.sin(phi)
 
         # dot(psi)
         f6 = w_y * ca.sin(phi) + w_z * ca.cos(phi) / ca.cos(theta)
