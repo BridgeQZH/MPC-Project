@@ -22,7 +22,12 @@ class Quadrotor(object):
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
+<<<<<<< HEAD
         self.p_d = ca.DM.zeros(3,1)         # position reference
+=======
+        self.p_d = ca.DM.zeros(3,1)               # position reference
+        self.p_d = [0.5,0.5,0.5]
+>>>>>>> a507931c1e2ec0d1db89e8346f4ee4fa4e58587c
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
@@ -308,7 +313,7 @@ class Quadrotor(object):
     pass
 
 
-class Quadrotor_nl(object):
+class Quadrotor_Integrator(object):
     def __init__(self, h=0.1):
         """
         quadrotor model class. 
@@ -356,34 +361,18 @@ class Quadrotor_nl(object):
         print(self)                         # You can comment this line
 
     def __str__(self):
-        return """                                                                  
-                ,@@,                                                            
-              @@@@@@@@                                                          
-              @@@ m @@                                                         
-               .@@@@&                                                          
-                     *                   .                                      
-                      (#       theta     .                                   
-                       ,* *              .                                   
-                         */              .                                      
-                          (*             .                                      
-                            *,           .                                      
-                             #(          .                                      
-           Y               l   *         .                                      
-           ^                    ##       .                                      
-           |                     .*      .                                      
-           |                       /(    .                                      
-           |                        /*   .                                      
-           +-------> X                *, .                                      
-                                       %/.                                      
-                        ***************////***************                      
-                        (*********************************      F              
-                        (***  M  *************************---------->       
-                        (*********************************                      
-                            ,/**/                ,/*/*                          
-                          ********#            (*******(                        
-                          #*******(            %*******#                        
-                            %***#                %***%                          
-            -----------------------------------------------------------      """
+        return """                                
+                     Z                                                 
+                     ^                                                      
+                     |                                                      
+                     |                                                         
+                     |                                                   
+                     +-------> Y                                                  
+                    -                           
+                   -
+                  -
+             X  <-                                                                        
+                    """
 
     def set_integrators(self):
         """

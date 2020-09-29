@@ -38,8 +38,8 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
+        # u_vec = np.array([[0.1,0,0,0]]).T
         u_vec = np.array([[0,0,0,0]]).T
-        
         # Start figure
         if len(x0) == 12:
             fig, (ax1,ax2,ax3) = plt.subplots(3)
@@ -60,7 +60,10 @@ class EmbeddedSimEnvironment(object):
                     u = self.controller(x)
                     # u = ca.DM(np.size(u_vec,0),1).full()
                     # u = np.array([u_vec[:,-1]]).T
+<<<<<<< HEAD
                     print(u)
+=======
+>>>>>>> a507931c1e2ec0d1db89e8346f4ee4fa4e58587c
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \
@@ -100,7 +103,8 @@ class EmbeddedSimEnvironment(object):
             # Store data
             t = np.append(t,t[-1]+self.dt)
             y_vec = np.append(y_vec, np.array(x_next), axis=1)
-            u_vec = np.append(u_vec, np.array(u), axis=1)
+            u_temp = [u[0],u[1],u[2],u[3]]
+            u_vec = np.append(u_vec, np.array([u_temp]).T, axis=1)
 
             # Get plot window values:
             if self.plt_window != float("inf"):
