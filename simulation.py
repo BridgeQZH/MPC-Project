@@ -60,10 +60,6 @@ class EmbeddedSimEnvironment(object):
                     u = self.controller(x)
                     # u = ca.DM(np.size(u_vec,0),1).full()
                     # u = np.array([u_vec[:,-1]]).T
-<<<<<<< HEAD
-                    print(u)
-=======
->>>>>>> a507931c1e2ec0d1db89e8346f4ee4fa4e58587c
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \

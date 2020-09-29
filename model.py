@@ -22,12 +22,8 @@ class Quadrotor(object):
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
-<<<<<<< HEAD
-        self.p_d = ca.DM.zeros(3,1)         # position reference
-=======
         self.p_d = ca.DM.zeros(3,1)               # position reference
         self.p_d = [0.5,0.5,0.5]
->>>>>>> a507931c1e2ec0d1db89e8346f4ee4fa4e58587c
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
