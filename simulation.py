@@ -122,7 +122,7 @@ class EmbeddedSimEnvironment(object):
                 ax2.plot( t[l_wnd:-1], y_vec[6,l_wnd:-1], 'r--', \
                           t[l_wnd:-1], y_vec[7,l_wnd:-1], 'b--', \
                           t[l_wnd:-1], y_vec[8,l_wnd:-1], 'g--')
-                ax2.legend(["theta","phi","psi"])
+                ax2.legend(["roll theta","pitch phi","yaw psi"])
                 ax2.set_ylabel("State[orientation] / rad")
                 ax2.grid()
 

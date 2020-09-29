@@ -16,6 +16,7 @@ A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 Q = np.diag([1.0/0.05,1.0/0.05,1.0/0.05,1.0/0.5,1.0/0.5,1.0/0.5,1,1,1,1,1,1])
 # R = np.diag([1.0/4, 1.0/4, 1.0/4, 1.0/4])
 R = np.diag([1,1,1,1])
+# R = np.diag([0,0,0,0])
 
 A_np = np.asarray(A)
 B_np = np.asarray(B)
@@ -38,4 +39,6 @@ sim_env = EmbeddedSimEnvironment(model=quadrotor,
                                 controller=ctl.mpc_controller,
                                 time = 6)
 
-t, y, u = sim_env.run([-0.5,-0.4,0,0,0,0,0,0,0,0,0,0])
+# t, y, u = sim_env.run([0,0,0,0,0,0,0,0,quadrotor.m * quadrotor.g,0,0,0])
+x0=[0,0,0,0,0,0,0,0,0,0,0,0]
+t, y, u = sim_env.run(x0=x0)

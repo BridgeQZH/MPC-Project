@@ -23,11 +23,13 @@ class Quadrotor(object):
 
         # System reference (x_d) and disturbance (w)
         self.p_d = ca.DM.zeros(3,1)               # position reference
-        self.p_d = [0.5,0.5,0.5]
+        # self.p_d = [0.5,0.5,0.5]
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
+        self.x_d[0] = 0.5
+        print(self.x_d)
         self.w = 0.0
 
         # Quadrotor Parameters

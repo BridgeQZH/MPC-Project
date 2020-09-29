@@ -56,8 +56,8 @@ class MPC(object):
 
         # Initialize variables
         self.set_cost_functions()
-        x_sp = [0.5,0.5,0.5,0,0,0,0,0,0,0,0,0]
-        self.set_reference(x_sp)
+        # x_sp = [0,0,0.5,0,0,0,0,0,0,0,0,0]
+        self.set_reference(model.x_d)
         # self.x_sp = None
 
 
@@ -75,8 +75,8 @@ class MPC(object):
 
         if xub is None:
             xub = np.full((self.Nx), np.inf)
-            xub[6] = np.pi/2
-            xub[7] = np.pi/2
+            xub[6] = np.pi/2 # theta range (roll)
+            xub[7] = np.pi/2 # phi range (pitch)
         if xlb is None:
             xlb = np.full((self.Nx), -np.inf)
             xlb[2] = 0
