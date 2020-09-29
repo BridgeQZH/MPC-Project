@@ -18,6 +18,7 @@ class Quadrotor(object):
         # Model, gravity and sampling time parameters
         self.model = self.quadrotor_linear_dynamics
         self.g = 9.81
+        self.l = 0.175
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
