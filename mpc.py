@@ -85,7 +85,7 @@ class MPC(object):
         if uub is None:
             uub = [3*model.m*model.g, model.m*model.g*model.l, model.m*model.g*model.l, 0.01]
         if ulb is None:
-            ulb = [-1*model.m*model.g, 0, 0, 0]
+            ulb = [-1*model.m*model.g, -1*model.m*model.g*model.l, -1*model.m*model.g*model.l, -1*model.m*model.g*model.l]
 
 
         # Starting state parameters - add slack here
