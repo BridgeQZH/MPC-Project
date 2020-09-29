@@ -13,8 +13,9 @@ quadrotor = Quadrotor()
 # Get the system discrete-time dynamics
 A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 
-Q = np.diag([1,2,3,4,5,1,1,1,1,1,1,1])
-R = np.diag([1.0/4, 1.0/4, 1.0/4, 1.0/4])
+Q = np.diag([1.0/0.05,1.0/0.05,1.0/0.05,1.0/0.5,1.0/0.5,1.0/0.5,1,1,1,1,1,1])
+# R = np.diag([1.0/4, 1.0/4, 1.0/4, 1.0/4])
+R = np.diag([1,1,1,1])
 
 A_np = np.asarray(A)
 B_np = np.asarray(B)
@@ -25,7 +26,7 @@ P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 ctl = MPC(model=quadrotor, 
         dynamics=quadrotor.discrete_time_dynamics, 
         Q = Q , R = R, P = P,
-        horizon=7,
+        horizon=3,
         ulb=None, uub=None, 
         xlb=None, 
         xub=None,
@@ -37,4 +38,4 @@ sim_env = EmbeddedSimEnvironment(model=quadrotor,
                                 controller=ctl.mpc_controller,
                                 time = 6)
 
-t, y, u = sim_env.run([0,0,0,0,0,0,0,0,0,0,0,0])
+t, y, u = sim_env.run([-0.5,-0.4,0,0,0,0,0,0,0,0,0,0])

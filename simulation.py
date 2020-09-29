@@ -29,7 +29,7 @@ class EmbeddedSimEnvironment(object):
         # Plotting definitions 
         self.plt_window = float("inf")    # running plot window, in seconds, or float("inf")
 
-    def run(self, x0=[0,0,0,0,0,0,0,0,0,0,0,0]):
+    def run(self, x0=[0.5,0.5,0.5,0,0,0,0,0,0,0,0,0]):
         """
         Run simulator with specified system dynamics and control function.
         """
@@ -38,7 +38,7 @@ class EmbeddedSimEnvironment(object):
         sim_loop_length = int(self.total_sim_time/self.dt) + 1 # account for 0th
         t = np.array([0])
         y_vec = np.array([x0]).T
-        u_vec = np.array([[0.1,0,0,0]]).T
+        u_vec = np.array([[0,0,0,0]]).T
         
         # Start figure
         if len(x0) == 12:
@@ -57,10 +57,10 @@ class EmbeddedSimEnvironment(object):
                     # print(x)
 
                     # Get control input and obtain next state
-                    # u = self.controller(x)
-                    u = ca.DM(np.size(u_vec,0),1).full()
-                    u = np.array([u_vec[:,-1]]).T
-                    # print(u)
+                    u = self.controller(x)
+                    # u = ca.DM(np.size(u_vec,0),1).full()
+                    # u = np.array([u_vec[:,-1]]).T
+                    print(u)
                     x_next = self.dynamics(x, u)
                 except RuntimeError as e:
                     print("Uh oh, your simulator crashed due to unstable dynamics.\n \

@@ -56,7 +56,9 @@ class MPC(object):
 
         # Initialize variables
         self.set_cost_functions()
-        self.x_sp = None
+        x_sp = [0.5,0.5,0.5,0,0,0,0,0,0,0,0,0]
+        self.set_reference(x_sp)
+        # self.x_sp = None
 
 
         # Cost function weights
@@ -242,7 +244,6 @@ class MPC(object):
             u0 = np.zeros(self.Nu)
         if self.x_sp is None:
             self.x_sp = np.zeros(self.Nx)
-
 
         # Initialize variables
         self.optvar_x0          = np.full((1, self.Nx), x0.T)

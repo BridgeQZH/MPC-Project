@@ -22,7 +22,7 @@ class Quadrotor(object):
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
-        self.p_d = ca.DM.zeros(3,1)               # position reference
+        self.p_d = ca.DM.zeros(3,1)         # position reference
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
@@ -39,6 +39,7 @@ class Quadrotor(object):
         
         # Linearize system around vertical equilibrium with no input
         self.p = ca.DM.zeros(3,1)               # position state
+        # print(self.p)
         self.v = ca.DM.zeros(3,1)               # velocity state
         self.alpha = ca.DM.zeros(3,1)           # orientation state
         self.omega = ca.DM.zeros(3,1)           # angular velocity state
