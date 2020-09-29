@@ -44,7 +44,6 @@ class Quadrotor(object):
         
         # Linearize system around vertical equilibrium with no input
         self.p = ca.DM.zeros(3,1)               # position state
-        # print(self.p)
         self.v = ca.DM.zeros(3,1)               # velocity state
         self.alpha = ca.DM.zeros(3,1)           # orientation state
         self.omega = ca.DM.zeros(3,1)           # angular velocity state
@@ -331,23 +330,33 @@ class Quadrotor_Integrator(object):
         self.model_nl = self.quadrotor_nonlinear_dynamics
         self.model_ag = self.quadrotor_augmented_dynamics
         self.g = 9.81
+        self.l = 0.175
         self.dt = h
 
         # System reference (x_d) and disturbance (w)
-        self.x_d = 10
+        self.p_d = ca.DM.zeros(3,1)               # position reference
+        self.v_d = ca.DM.zeros(3,1)               # velocity reference
+        self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
+        self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
+        self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
+        self.x_d[2] = 0.5
+        self.x_d[1] = 0.5
+        self.x_d[0] = 0.5
         self.w = 0.0
 
         # quadrotor Parameters
-        self.m = 0.2
-        self.M = 0.5
-        self.I = 0.006
-        self.l = 0.3
-        self.bc = 0.1
-        self.bp = 0.012
+        self.m = 1.4            # quadrotor mass
+        self.M_x = 0.001         # Inertia along x-axis
+        self.M_y = 0.001         # Inertia along y-axis
+        self.M_z = 0.005         # Inertia along z-axis
 
         # Linearize system around vertical equilibrium with no input
-        self.x_eq = [0,0,0,0]
-        self.u_eq = 0
+        self.p = ca.DM.zeros(3,1)               # position state
+        self.v = ca.DM.zeros(3,1)               # velocity state
+        self.alpha = ca.DM.zeros(3,1)           # orientation state
+        self.omega = ca.DM.zeros(3,1)           # angular velocity state
+        self.x_eq = ca.vertcat(self.p, self.v, self.alpha, self.omega)     # system state vertical stack
+        self.u_eq = ca.DM.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
         self.Integrator_lin = None
         self.Integrator = None
         self.Integrator_ag = None
@@ -361,7 +370,8 @@ class Quadrotor_Integrator(object):
         print(self)                         # You can comment this line
 
     def __str__(self):
-        return """                                
+        return """
+                NON-LINEAR                                
                      Z                                                 
                      ^                                                      
                      |                                                      
@@ -380,10 +390,9 @@ class Quadrotor_Integrator(object):
         """
         
         # Set CasADi variables
-        x = ca.MX.sym('x', 4)
-        u = ca.MX.sym('u', 1)
+        x = ca.MX.sym('x', 12)
+        u = ca.MX.sym('u', 4)
         w = ca.MX.sym('w', 1)
-
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
                    "tf" : self.dt}
@@ -398,7 +407,7 @@ class Quadrotor_Integrator(object):
 
         if self.Ad_i is not None:
             # Create augmented system dynamics integrator
-            x_ag = ca.MX.sym('x', 5)
+            x_ag = ca.MX.sym('x', 13)
             dae = {'x': x_ag, 'ode': self.model_ag(x_ag,u), 'p':ca.vertcat(u)}
             self.Integrator_ag = ca.integrator('integrator', 'cvodes', dae, options)
 
@@ -413,8 +422,8 @@ class Quadrotor_Integrator(object):
             exit()
 
         # Set CasADi variables
-        x = ca.MX.sym('x', 4)
-        u = ca.MX.sym('u', 1)
+        x = ca.MX.sym('x', 12)
+        u = ca.MX.sym('u', 4)
         w = ca.MX.sym('w', 1)
     
         # Jacobian of exact discretization
@@ -482,47 +491,90 @@ class Quadrotor_Integrator(object):
         :rtype: MX variable, 4x1
         """
 
-        Ac = ca.MX.zeros(4,4)
-        Bc = ca.MX.zeros(4,1)
-        Bwc = ca.MX.zeros(4,1)
+        theta, phi, psi = ca.vertsplit(self.alpha)
+        w_x, w_y, w_z = ca.vertsplit(self.omega)
 
-        v1 = (self.m + self.M)/(self.I*(self.m + self.M) + self.m*self.M*self.l**2)
-        v2 = (self.I+self.m*self.l**2)/(self.I*(self.m + self.M) + self.m*self.M*self.l**2)
+        f_z = self.g * self.m   # input control at equilibrium point
+        # m = self.m
+        Ac = ca.MX.zeros(12,12)
+        Bc = ca.MX.zeros(12,4)
+        J_a = ca.MX.zeros(3,3)
+        J_b = ca.MX.zeros(3,3)
+        J_c = ca.MX.zeros(3,3)
+        J_d = ca.MX.zeros(3,3)
+        
+        J_a[0,0] = ca.cos(theta) * ca.sin(psi) - ca.sin(theta) * ca.sin(phi) * ca.cos(psi)
+        J_a[0,1] = ca.cos(theta) * ca.cos(phi) * ca.cos(psi)
+        J_a[0,2] = ca.sin(theta) * ca.cos(psi) - ca.cos(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,0] = -ca.cos(theta) * ca.cos(psi) - ca.sin(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,1] = ca.cos(theta) * ca.cos(phi) * ca.sin(psi)
+        J_a[1,2] = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)
+        J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
+        J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
+        J_a *= f_z / self.m 
+
+        J_b[0,0] = (1.0/ca.cos(theta))**2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
+        J_b[1,1] = - w_y * ca.sin(phi) - w_z * ca.cos(phi)
+        J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(theta) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[2,1] = (1.0 / ca.cos(theta)) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
+        
+        J_c[0,0] = 1.0
+        J_c[0,1] = ca.sin(phi) * ca.tan(theta)
+        J_c[0,2] = ca.cos(phi) * ca.tan(theta)
+        J_c[1,1] = ca.cos(phi)
+        J_c[1,2] = -ca.sin(phi)
+        J_c[2,1] = 1.0 / ca.cos(theta) * ca.sin(phi)
+        J_c[2,2] = 1.0 / ca.cos(theta) * ca.cos(phi)
+
+        J_d[0,1] = w_z * (self.M_y - self.M_z) / self.M_x
+        J_d[0,2] = w_y * (self.M_y - self.M_z) / self.M_x
+        J_d[1,0] = w_z * (self.M_z - self.M_x) / self.M_y
+        J_d[1,2] = w_x * (self.M_z - self.M_x) / self.M_y
+        J_d[2,0] = w_y * (self.M_x - self.M_y) / self.M_z
+        J_d[2,1] = w_x * (self.M_x - self.M_y) / self.M_z
 
         ### Build Ac matrix
-        # First Row
-        Ac[0,1] = 1
-
-        # Second row
-        Ac[1,1] = -self.bc*v2
-        Ac[1,2] = self.m**2 * self.l**2 * self.g * v2 / (self.I + self.m*(self.l**2))
-        Ac[1,3] = -self.m * self.l * self.bp * v2 / (self.I + self.m*(self.l**2))
-
-        # Third row
-        Ac[2,3] = 1
-        
-        # Fourth row
-        Ac[3,1] = -self.m * self.l * self.bc * v1 /(self.m + self.M)
-        Ac[3,2] = self.m * self.g * self.l * v1
-        Ac[3,3] = -self.bp * v1
+        Ac[0:3,3:6] = ca.MX.eye(3)
+        Ac[3:6,6:9] = J_a 
+        Ac[6:9,6:9] = J_b
+        Ac[6:9,9:12] = J_c
+        Ac[9:12,9:12] = J_d
 
         ### Build Bc matrix
-        # Second Row
-        Bc[1,0] = v2
+        J_e = ca.MX.zeros(3,1)
+        J_f = ca.MX.zeros(3,3)
 
-        # Fourth row
-        Bc[3,0] = self.m * self.l * v1 / (self.m + self.M)
+        J_e[0,0] = (ca.sin(theta)*ca.sin(psi)+ ca.sin(phi)*ca.cos(psi)*ca.cos(theta))/self.m
+        J_e[1,0] = (-ca.sin(theta)*ca.cos(psi)+ ca.sin(phi)*ca.cos(theta)*ca.sin(psi))/self.m
+        J_e[2,0] = ca.cos(theta)*ca.cos(phi)/self.m
 
-        ### Build Bwc
-        Bwc[1,0] = -self.I*v2/(self.I + self.m*self.l**2); 
-        Bwc[3,0] = self.M*self.l*v1/(self.M+self.m);
+        J_f[0,0] = 1.0/self.M_x
+        J_f[1,1] = 1.0/self.M_y
+        J_f[2,2] = 1.0/self.M_z
 
+        Bc[3:6,0] = J_e
+        Bc[9:12,1:4] = J_f
 
         ### Store matrices as class variables
         self.Ac = Ac
-        self.Bc = Bc
-        self.Bwc = Bwc 
-
+        self.Bc = Bc 
+        self.Bwc = Bwc
+        # # Transfromation matrix from body frame to inertia frame for angular velocity.
+        # T = ca.MX.zeros(3,3)
+        # T[0,0] = 1
+        # T[0,1] = (ca.sin(phi)*ca.sin(theta))/(ca.cos(phi))
+        # T[0,2] =  (ca.cos(theta)*ca.sin(phi))/(ca.cos(phi))
+        # T[1,1] =  ca.cos(theta)
+        # T[1,2] = -ca.sin(theta)
+        # T[2,1] =  ca.sin(theta)/(ca.cos(phi))
+        # T[2,2] = ca.cos(theta)/(ca.cos(phi))
+        # temp = ca.MX.zeros(12,1)
+        # omega_dot = ca.MX.zeros(3,1)
+        # temp = Ac @ x + Bc @ u
+        # omega_dot = T @ temp[9:12,0]
+        # result = ca.vertcat(temp[0:9,0],omega_dot)
+     
         return Ac @ x + Bc @ u + Bwc @ w
 
     def quadrotor_linear_dynamics_with_disturbance(self, x, u):
@@ -543,32 +595,42 @@ class Quadrotor_Integrator(object):
         :return: state time derivative
         :rtype: casadi.DM or casadi.MX, depending on inputs
         """
-        x1 = x[0]
-        x2 = x[1]
-        x3 = x[2]
-        x4 = x[3]
-         
-        # dot(x2)
-        f1 = (1.0/ ( self.M + self.m - (self.m**2*self.l**2*ca.cos(x3)**2)/(self.I + self.m*self.l**2) ) ) * \
-             (u + ( (self.m*self.l**2*ca.cos(x3)**2)/(self.I + self.m*self.l**2) - 1)*self.w  
-              - self.bc*x2 
-              - self.m*self.l*x4**2*ca.sin(x3) 
-              + (self.m**2*self.l**2*self.g*ca.sin(x3)*ca.cos(x3))/(self.I + self.m*self.l**2) 
-              - (self.m*self.l*self.bp*x4*ca.cos(x3))/(self.I + self.m*self.l**2) 
-             )
+        #TODO: use ca.vertsplit() to make variables' assignments elegant
+        p_x, p_y, p_z = x[0], x[1], x[2]
+        v_x, v_y, v_z = x[3], x[4], x[5]
+        theta, phi, psi = x[6], x[7], x[8]
+        w_x, w_y, w_z = x[9], x[10], x[11]
 
-        # dot(x4)
-        f2 = (1.0/ ( self.I + self.m*self.l**2 - (self.m**2*self.l**2*ca.cos(x3)**2)/(self.m + self.M) ) ) * \
-             (
-                 u*(self.m*self.l*ca.cos(x3))/(self.m+self.M) 
-                 + self.w*(self.M*self.l*ca.cos(x3))/(self.m+self.M) 
-                 - self.bp*x4 
-                 + self.m*self.l*self.g*ca.sin(x3) 
-                 - (self.m**2*self.l**2*x4**2*ca.sin(x3)*ca.cos(x3))/(self.m + self.M) 
-                 - (self.m*self.l*self.bc*x2*ca.cos(x3))/(self.m+self.M)
-             )
+        f_z, tau_x, tau_y, tau_z = ca.vertsplit(u)
+
+        # dot(v_x)
+        f1 = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi) * f_z / self.m
+
+        # dot(v_y)
+        f2 = -ca.sin(theta) * ca.cos(psi) + ca.cos(theta) * ca.sin(phi) * ca.sin(psi) * f_z / self.m
+
+        # dot(v_z)
+        f3 = ca.cos(theta) * ca.cos(phi) * f_z / self.m - self.g
+
+        # dot(theta)
+        f4 = w_x + ca.tan(theta) * (w_y * ca.sin(phi) + w_z * cos(phi))
+
+        # dot(phi)
+        f5 = w_y * ca.cos(phi) - w_z * sin(phi)
+
+        # dot(psi)
+        f6 = w_y * ca.sin(phi) + w_z * ca.cos(phi) / ca.cos(theta)
+
+        # dot(w_x)
+        f7 = (tau_x - w_y * w_z * (self.M_z - self.M_y)) / self.M_x
+
+        # dot(w_y)
+        f8 = (tau_y - w_x * w_z * (self.M_x - self.M_z)) / self.M_y
+
+        # dot(w_z)
+        f9 = (tau_z - w_x * w_y * (self.M_y - self.M_x)) / self.M_z
         
-        dxdt = [ x2, f1, x4, f2 ]
+        dxdt = [ v_x, v_y, v_z, f1, f2, f3, f4, f5, f6, f7, f8, f9 ]
 
         return ca.vertcat(*dxdt)
 
