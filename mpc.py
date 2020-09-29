@@ -83,9 +83,9 @@ class MPC(object):
             xlb[6] = -np.pi/4
             xlb[7] = -np.pi/4
         if uub is None:
-            uub = [4*model.m*model.g, model.m*model.g*model.l, model.m*model.g*model.l, 0.01]
+            uub = [3*model.m*model.g, model.m*model.g*model.l, model.m*model.g*model.l, 0.01]
         if ulb is None:
-            ulb = np.full((self.Nu), 0)
+            ulb = [-1*model.m*model.g, 0, 0, 0]
 
 
         # Starting state parameters - add slack here

@@ -28,7 +28,7 @@ class Quadrotor(object):
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
-        self.x_d[0] = 0.5
+        self.x_d[2] = 0.5
         print(self.x_d)
         self.w = 0.0
 

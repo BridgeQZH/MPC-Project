@@ -58,6 +58,7 @@ class EmbeddedSimEnvironment(object):
 
                     # Get control input and obtain next state
                     u = self.controller(x)
+                    print(u)
                     # u = ca.DM(np.size(u_vec,0),1).full()
                     # u = np.array([u_vec[:,-1]]).T
                     x_next = self.dynamics(x, u)
@@ -99,7 +100,7 @@ class EmbeddedSimEnvironment(object):
             # Store data
             t = np.append(t,t[-1]+self.dt)
             y_vec = np.append(y_vec, np.array(x_next), axis=1)
-            u_temp = [u[0],u[1],u[2],u[3]]
+            u_temp = [u[0]+self.model.m*self.model.g,u[1],u[2],u[3]]
             u_vec = np.append(u_vec, np.array([u_temp]).T, axis=1)
 
             # Get plot window values:
