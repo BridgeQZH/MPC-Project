@@ -30,7 +30,7 @@ P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_NONLINEAR == True):
         ctl = MPC(model = quadrotor_nl, 
-        dynamics = quadrotor_nl.discrete_time_dynamics,
+        dynamics = quadrotor_nl.discrete_nl_dynamics,
         Q = Q , R = R, P = P,
         horizon=7,
         ulb=None, uub=None, 
@@ -40,18 +40,13 @@ if (ENABLE_NONLINEAR == True):
 
 
         sim_env = EmbeddedSimEnvironment(model=quadrotor_nl, 
-                                        dynamics=quadrotor_nl.discrete_time_dynamics,
+                                        dynamics=quadrotor_nl.discrete_nl_dynamics,
                                         controller=ctl.mpc_controller,
                                         time = 6)
 
         # t, y, u = sim_env.run([0,0,0,0,0,0,0,0,quadrotor.m * quadrotor.g,0,0,0])
         x0=[0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env.run(x0=x0)  
-
-
-
-
-
 
         
 # Linear Situation 

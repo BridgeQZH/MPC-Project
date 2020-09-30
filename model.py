@@ -715,6 +715,19 @@ class Quadrotor_Integrator(object):
         out = self.Integrator(x0=x0, p=ca.vertcat(u, self.w))
         return out["xf"]
 
+    def discrete_nl_dynamics(self, x0, u):
+        """Discrete time nonlinear integrator
+
+        :param x0: starting state
+        :type x0: ca.DM
+        :param u: control input
+        :type u: ca.DM
+        :return: state at the final sampling interval time
+        :rtype: ca.DM
+        """
+        out = self.Integrator(x0=x0, p=u)
+        return out["xf"]
+
     def discrete_time_dynamics(self,x0,u):
         """ 
         Performs a discrete time iteration step.
