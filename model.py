@@ -48,7 +48,8 @@ class Quadrotor(object):
         self.alpha = ca.DM.zeros(3,1)           # orientation state
         self.omega = ca.DM.zeros(3,1)           # angular velocity state
         self.x_eq = ca.vertcat(self.p, self.v, self.alpha, self.omega)     # system state vertical stack
-        self.u_eq = ca.DM.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
+        self.u_eq = ca.DM.zeros(4,1)            # control input (f_t, tau_x, tau_y, tau_z)
+        self.u_eq[0] = self.m * self.g
         self.Integrator = None
 
         self.set_integrators()
@@ -356,7 +357,8 @@ class Quadrotor_Integrator(object):
         self.alpha = ca.DM.zeros(3,1)           # orientation state
         self.omega = ca.DM.zeros(3,1)           # angular velocity state
         self.x_eq = ca.vertcat(self.p, self.v, self.alpha, self.omega)     # system state vertical stack
-        self.u_eq = ca.DM.zeros(4,0)            # control input (f_t, tau_x, tau_y, tau_z)
+        self.u_eq = ca.DM.zeros(4,1)            # control input (f_t, tau_x, tau_y, tau_z)
+        self.u_eq[0] = self.m * self.g
         self.Integrator_lin = None
         self.Integrator = None
         self.Integrator_ag = None
@@ -606,10 +608,10 @@ class Quadrotor_Integrator(object):
         f_z, tau_x, tau_y, tau_z = ca.vertsplit(u)
 
         # dot(v_x)
-        f1 = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi) * f_z / self.m
+        f1 = (ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)) * f_z / self.m
 
         # dot(v_y)
-        f2 = -ca.sin(theta) * ca.cos(psi) + ca.cos(theta) * ca.sin(phi) * ca.sin(psi) * f_z / self.m
+        f2 = (-ca.sin(theta) * ca.cos(psi) + ca.cos(theta) * ca.sin(phi) * ca.sin(psi)) * f_z / self.m
 
         # dot(v_z)
         f3 = ca.cos(theta) * ca.cos(phi) * f_z / self.m - self.g
@@ -621,7 +623,7 @@ class Quadrotor_Integrator(object):
         f5 = w_y * ca.cos(phi) - w_z * ca.sin(phi)
 
         # dot(psi)
-        f6 = w_y * ca.sin(phi) + w_z * ca.cos(phi) / ca.cos(theta)
+        f6 = (w_y * ca.sin(phi) + w_z * ca.cos(phi)) / ca.cos(theta)
 
         # dot(w_x)
         f7 = (tau_x - w_y * w_z * (self.M_z - self.M_y)) / self.M_x
