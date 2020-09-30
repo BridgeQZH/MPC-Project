@@ -9,7 +9,7 @@ from mpc import MPC
 ENABLE_NONLINEAR = True
 # Create pendulum and controller objects
 quadrotor = Quadrotor()
-quadrotor_nl = Quadrotor_Integrator()
+# quadrotor_nl = Quadrotor_Integrator()
 # ctl = Controller()
 
 # Get the system discrete-time dynamics
@@ -29,18 +29,18 @@ B_np = np.asarray(B)
 P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_NONLINEAR == True):
-        ctl = MPC(model = quadrotor_nl, 
-        dynamics = quadrotor_nl.discrete_nl_dynamics,
-        Q = Q , R = R, P = P,
-        horizon=7,
+        ctl = MPC(model = quadrotor, 
+        dynamics = quadrotor.discrete_nl_dynamics,
+        Q = Q, R = R, P = P,
+        horizon=3,
         ulb=None, uub=None, 
         xlb=None, 
         xub=None,
         terminal_constraint=None)
 
 
-        sim_env = EmbeddedSimEnvironment(model=quadrotor_nl, 
-                                        dynamics=quadrotor_nl.discrete_nl_dynamics,
+        sim_env = EmbeddedSimEnvironment(model=quadrotor, 
+                                        dynamics=quadrotor.discrete_nl_dynamics,
                                         controller=ctl.mpc_controller,
                                         time = 6)
 
