@@ -11,28 +11,40 @@ ENABLE_LINEAR = False
 ENABLE_AUGMENTED = True
 
 # Create pendulum and controller objects
-quadrotor = Quadrotor()
+# quadrotor = Quadrotor()
 quadrotor_disturbance = Quadrotor_Integrator()
 # ctl = Controller()
 
 # Get the system discrete-time dynamics
-A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
+# A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 
-Q = np.diag([100, 100, 100,
-             100, 100, 100,
-             1000, 1000, 1000,
-             1000, 1000, 1000])
-# R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
-R = np.diag([1, 1, 1, 1])
-# R = np.diag([0,0,0,0])
+# Q = np.diag([100, 100, 100,
+#              100, 100, 100,
+#              1000, 1000, 1000,
+#              1000, 1000, 1000])
+# # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
+# R = np.diag([1, 1, 1, 1])
+# # R = np.diag([0,0,0,0])
 
-A_np = np.asarray(A)
-B_np = np.asarray(B)
+# A_np = np.asarray(A)
+# B_np = np.asarray(B)
 
-P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
+# P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_AUGMENTED == True):
         A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
+        Q = np.diag([   100, 100, 100,
+                        100, 100, 100,
+                        1000, 1000, 1000,
+                        1000, 1000, 1000, 1000])
+        # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
+        R = np.diag([1, 1, 1, 1])
+        # R = np.diag([0,0,0,0])
+
+        A_np = np.asarray(A)
+        B_np = np.asarray(B)
+
+        P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
         # Instantiate controller
         ctl = MPC(model=quadrotor_disturbance, 
             dynamics=quadrotor_disturbance.pendulum_augmented_dynamics,   # augmented

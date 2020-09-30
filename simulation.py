@@ -41,7 +41,7 @@ class EmbeddedSimEnvironment(object):
         # u_vec = np.array([[0.1,0,0,0]]).T
         u_vec = np.array([[0,0,0,0]]).T
         # Start figure
-        if len(x0) == 12:
+        if len(x0) == 12 or len(x0) == 13:
             fig, (ax1,ax2,ax3) = plt.subplots(3)
         else:
             print("Check your state dimensions.")
@@ -110,7 +110,7 @@ class EmbeddedSimEnvironment(object):
             else:  
                 l_wnd = 0
 
-            if len(x0) == 12:
+            if len(x0) == 12 or len(x0) == 13:
                 ax1.clear()
                 ax1.set_title("Quadrotor States - Ref: "+str(self.model.x_d)+" [m]")
                 ax1.plot( t[l_wnd:-1], y_vec[0,l_wnd:-1], 'r--', \

@@ -27,7 +27,7 @@ class Quadrotor(object):
         # self.p_d = [0.5,0.5,0.5]
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
-        self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
+        self.omega_d = ca.DM.zeros(3,1)          # angular velocity reference
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
         self.x_d[2] = 0.5
         self.x_d[1] = 0.5
@@ -383,10 +383,11 @@ class Quadrotor_Integrator(object):
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
-        self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
+        self.xixi = 10
+        self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d, self.xixi)        # system state reference
         self.x_d[2] = 0.5
-        self.x_d[1] = 0.5
-        self.x_d[0] = 0.5
+        # self.x_d[1] = 0.5
+        # self.x_d[0] = 0.5
         self.w = 0.0
 
         # quadrotor Parameters
@@ -429,7 +430,55 @@ class Quadrotor_Integrator(object):
                   -
              X  <-                                                                        
                     """
+    def quadrotor_nonlinear_dynamics(self, x, u, *_):
+        """
+        quadrotor nonlinear dynamics.
 
+        :param x: state
+        :type x: casadi.DM or casadi.MX
+        :param u: control input
+        :type u: casadi.DM or casadi.MX
+        :return: state time derivative
+        :rtype: casadi.DM or casadi.MX, depending on inputs
+        """
+        
+        p_x, p_y, p_z = ca.vertsplit(x[0:3])
+        v_x, v_y, v_z = ca.vertsplit(x[3:6])
+        theta, phi, psi = ca.vertsplit(x[6:9])
+        w_x, w_y, w_z = ca.vertsplit(x[9:12])
+
+        f_z, tau_x, tau_y, tau_z = ca.vertsplit(u)
+
+        # dot(v_x)
+        f1 = (ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)) * f_z / self.m
+
+        # dot(v_y)
+        f2 = (-ca.sin(theta) * ca.cos(psi) + ca.cos(theta) * ca.sin(phi) * ca.sin(psi)) * f_z / self.m
+
+        # dot(v_z)
+        f3 = ca.cos(theta) * ca.cos(phi) * f_z / self.m - self.g
+
+        # dot(theta)
+        f4 = w_x + ca.tan(theta) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+
+        # dot(phi)
+        f5 = w_y * ca.cos(phi) - w_z * ca.sin(phi)
+
+        # dot(psi)
+        f6 = (w_y * ca.sin(phi) + w_z * ca.cos(phi)) / ca.cos(theta)
+
+        # dot(w_x)
+        f7 = (tau_x - w_y * w_z * (self.M_z - self.M_y)) / self.M_x
+
+        # dot(w_y)
+        f8 = (tau_y - w_x * w_z * (self.M_x - self.M_z)) / self.M_y
+
+        # dot(w_z)
+        f9 = (tau_z - w_x * w_y * (self.M_y - self.M_x)) / self.M_z
+        
+        dxdt = [ v_x, v_y, v_z, f1, f2, f3, f4, f5, f6, f7, f8, f9 ]
+
+        return ca.vertcat(*dxdt)
     def set_integrators(self):
         """
         Generate continuous time high-precision integrators.
@@ -438,7 +487,7 @@ class Quadrotor_Integrator(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 1)
+        w = ca.MX.sym('w', 4)
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
                    "tf" : self.dt}
@@ -470,7 +519,7 @@ class Quadrotor_Integrator(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 1)
+        w = ca.MX.sym('w', 4)
     
         # Jacobian of exact discretization
         self.Ad = ca.Function('jac_x_Ad', [x, u, w], [ca.jacobian(
@@ -491,7 +540,7 @@ class Quadrotor_Integrator(object):
 
         self.Cd_eq = Cd_eq
 
-    def quadrotor_linear_dynamics(self, x, u):  
+    def quadrotor_linear_dynamics(self, x, u, w):  
         """ 
         quadrotor continuous-time linearized dynamics.
 
@@ -510,6 +559,9 @@ class Quadrotor_Integrator(object):
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
+        Bwc = ca.MX.zeros(12,4)
+        Awc = ca.MX.zeros(12,12)
+
         J_a = ca.MX.zeros(3,3)
         J_b = ca.MX.zeros(3,3)
         J_c = ca.MX.zeros(3,3)
@@ -568,11 +620,22 @@ class Quadrotor_Integrator(object):
         Bc[3:6,0] = J_e
         Bc[9:12,1:4] = J_f
 
+        ### Build Bwc
+        l = self.l
+        k = 0.005
+        Bwc_disturbance = ca.MX.zeros(4,4)
+        Bwc_disturbance[0,0:4] = [1,1,1,1]
+        Bwc_disturbance[1,0:4] = [-l,0,l,0]
+        Bwc_disturbance[2,0:4] = [0,l,0,-l]
+        Bwc_disturbance[3,0:4] = [-k, k, -k, k]
+        Bwc = Bc @ Bwc_disturbance
         ### Store matrices as class variables
         self.Ac = Ac
-        self.Bc = Bc 
+        self.Bc = Bc
+        self.Bwc = Bwc
+        self.Awc = Awc  
 
-        return Ac @ x + Bc @ u
+        return Ac @ x + Bc @ u + Bwc @ w
 
     def set_reference(self, ref):	
         """	
@@ -623,8 +686,8 @@ class Quadrotor_Integrator(object):
 
         # Instantiate augmented system
         self.Ad_i = ca.DM.zeros(13,13)
-        self.Bd_i = ca.DM.zeros(13,1)
-        self.Bw_i = ca.DM.zeros(13,1)
+        self.Bd_i = ca.DM.zeros(13,4)
+        self.Bw_i = ca.DM.zeros(13,4)
         self.Cd_i = ca.DM.zeros(1,13)
         self.R_i = ca.DM.zeros(13,1)
 
@@ -633,9 +696,9 @@ class Quadrotor_Integrator(object):
         self.Ad_i[12,0:12] = self.dt @ self.Cd_eq
         self.Ad_i[12,12] = 1
 
-        self.Bd_i[0:12,0] = Bd_eq
+        self.Bd_i[0:12,0:4] = Bd_eq
 
-        self.Bw_i[0:12,0] = self.Bw(self.x_eq, self.u_eq, self.w)
+        self.Bw_i[0:12,0:4] = self.Bw(self.x_eq, self.u_eq, self.w)
 
         self.R_i[12,0] = self.dt
 
