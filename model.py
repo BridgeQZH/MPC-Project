@@ -368,7 +368,7 @@ class Quadrotor_Integrator(object):
         self.v_d = ca.DM.zeros(3,1)               # velocity reference
         self.alpha_d = ca.DM.zeros(3,1)           # orientation reference
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
-        self.xixi = 10
+        self.xixi = 1
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d, self.xixi)        # system state reference
         self.x_d[2] = 0.5
         # self.x_d[1] = 0.5
@@ -607,7 +607,7 @@ class Quadrotor_Integrator(object):
 
         ### Build Bwc
         l = self.l
-        k = 0.005
+        k = 0.5
         Bwc_disturbance = ca.MX.zeros(4,4)
         Bwc_disturbance[0,0:4] = [1,1,1,1]
         Bwc_disturbance[1,0:4] = [-l,0,l,0]

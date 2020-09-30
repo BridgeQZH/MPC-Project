@@ -127,7 +127,6 @@ class MPC(object):
             # Dynamics constraint
             x_t_next = self.dynamics(x_t, u_t)
             con_eq.append(x_t_next - opt_var['x',t+1])
-            print(con_eq[-1].size2())
             # Input constraints
             if uub is not None:
                 con_ineq.append(u_t)
@@ -162,9 +161,6 @@ class MPC(object):
 
         # Equality constraints bounds are 0 (they are equality constraints), 
         # -> Refer to CasADi documentation
-        for i in range(len(con_eq)):
-            print(con_eq[i].size2())
-        print(con_eq[0])
         num_eq_con = ca.vertcat(*con_eq).size1()
         num_ineq_con = ca.vertcat(*con_ineq).size1()
         con_eq_lb = np.zeros((num_eq_con,))

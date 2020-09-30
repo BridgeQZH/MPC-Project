@@ -1,6 +1,5 @@
 import numpy as np
 import scipy
-import casadi as ca
 
 from model import Quadrotor, Quadrotor_Integrator
 from controller import Controller
@@ -34,10 +33,10 @@ P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_AUGMENTED == True):
         A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
-        Q = np.diag([   100, 100, 100,
-                        100, 100, 100,
+        Q = np.diag([   2000, 2000, 2000,
                         1000, 1000, 1000,
-                        1000, 1000, 1000, 1000])
+                        5000, 5000, 10000,
+                        1000, 1000, 1000, 1])
         # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
         R = np.diag([1, 1, 1, 1])
         # R = np.diag([0,0,0,0])
@@ -49,19 +48,19 @@ if (ENABLE_AUGMENTED == True):
         # Instantiate controller
         ctl = MPC(model=quadrotor_disturbance, 
             dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,   # augmented
-            horizon=8,
+            horizon=5,
             Q = Q , R = R, P = P,
             ulb=None, uub=None, 
             xlb=None,   
             xub=None,       
             terminal_constraint=None)
-        w = ca.DM.zeros(4,1)+0.001
+        w = [0.1,0,0,-0.1]
         quadrotor_disturbance.enable_disturbance(w=w)
         sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
                                         dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,    # augmented
                                         controller=ctl.mpc_controller,
                                         time = 10)
-        sim_env_full_dist.set_window(10)
+        # sim_env_full_dist.set_window(10)
         x0=[0,0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env_full_dist.run(x0=x0)  
 
