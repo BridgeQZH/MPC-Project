@@ -626,7 +626,7 @@ class Quadrotor_Integrator(object):
 
         self.Cd_i[0,0:12] = self.Cd_eq
 
-     def discrete_nl_dynamics(self, x0, u):	
+    def discrete_nl_dynamics(self, x0, u):	
         """Discrete time nonlinear integrator	
         :param x0: starting state	
         :type x0: ca.DM	
@@ -649,9 +649,7 @@ class Quadrotor_Integrator(object):
         :rtype: 4x1, ca.DM	
         """	
 
-        return self.Ad(self.x_eq, self.u_eq, self.w) @ x0 + \	
-                self.Bd(self.x_eq, self.u_eq, self.w) @ u + \	
-                self.Bw(self.x_eq, self.u_eq, self.w) @ self.w	
+        return self.Ad(self.x_eq, self.u_eq, self.w) @ x0 + self.Bd(self.x_eq, self.u_eq, self.w) @ u + self.Bw(self.x_eq, self.u_eq, self.w) @ self.w	
 
     def enable_disturbance(self, w=0.01):	
         """	

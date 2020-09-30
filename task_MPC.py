@@ -53,7 +53,7 @@ if (ENABLE_AUGMENTED == True):
 '''
 Nonlinear situation
 '''
-elif (ENABLE_NONLINEAR == True):
+if(ENABLE_NONLINEAR == True):
         ctl = MPC(model = quadrotor, 
         dynamics = quadrotor.discrete_nl_dynamics,
         Q = Q, R = R, P = P,
@@ -75,7 +75,7 @@ elif (ENABLE_NONLINEAR == True):
 '''
 Linear situation
 '''
-elif(ENABLE_LINEAR == True):
+if(ENABLE_LINEAR == True):
         ctl = MPC(model=quadrotor, 
                 dynamics=quadrotor.discrete_time_dynamics, 
                 Q = Q , R = R, P = P,
