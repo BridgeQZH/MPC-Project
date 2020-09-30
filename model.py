@@ -395,7 +395,7 @@ class Quadrotor_Integrator(object):
 
         self.set_integrators()
         self.set_discrete_time_system()
-        # self.set_augmented_discrete_system()
+        self.set_augmented_discrete_system()
 
         print("quadrotor class initialized")
         print(self)                         # You can comment this line
@@ -438,7 +438,7 @@ class Quadrotor_Integrator(object):
 
         if self.Ad_i is not None:
             # Create augmented system dynamics integrator
-            x_ag = ca.MX.sym('x', 15)
+            x_ag = ca.MX.sym('x', 13)
             dae = {'x': x_ag, 'ode': self.model_ag(x_ag,u), 'p':ca.vertcat(u)}
             self.Integrator_ag = ca.integrator('integrator', 'cvodes', dae, options)
 
@@ -468,7 +468,7 @@ class Quadrotor_Integrator(object):
 
         # C matrix does not depend on the state
         # TODO: put this in a better place later!
-        Cd_eq = ca.DM.eye(1,12) 
+        Cd_eq = ca.DM.zeros(1,12)+1
         #Cd_eq[0,0] = 1
         #Cd_eq[0,1] = 1
         #Cd_eq[0,2] = 1
@@ -491,26 +491,22 @@ class Quadrotor_Integrator(object):
         Bd_eq = self.Bd(self.x_eq, self.u_eq, self.w)
 
         # Instantiate augmented system
-        self.Ad_i = ca.DM.zeros(15,15)
-        self.Bd_i = ca.DM.zeros(15,1)
-        self.Bw_i = ca.DM.zeros(15,1)
-        self.Cd_i = ca.DM.zeros(1,15)
-        self.R_i = ca.DM.zeros(15,1)
+        self.Ad_i = ca.DM.zeros(13,13)
+        self.Bd_i = ca.DM.zeros(13,1)
+        self.Bw_i = ca.DM.zeros(13,1)
+        self.Cd_i = ca.DM.zeros(1,13)
+        self.R_i = ca.DM.zeros(13,1)
 
         # Populate matrices
         self.Ad_i[0:12,0:12] = Ad_eq
-        self.Ad_i[12,0:0] = -self.dt @ self.Cd_eq[0]
-        self.Ad_i[13,0:1] = -self.dt @ self.Cd_eq[1]
-        self.Ad_i[14,0:2] = -self.dt @ self.Cd_eq[2]
+        self.Ad_i[12,0:12] = self.dt @ self.Cd_eq
         self.Ad_i[12,12] = 1
-        self.Ad_i[13,13] = 1
-        self.Ad_i[14,14] = 1
 
         self.Bd_i[0:12,0] = Bd_eq
 
         self.Bw_i[0:12,0] = self.Bw(self.x_eq, self.u_eq, self.w)
 
-        self.R_i[12:15,0] = self.dt
+        self.R_i[12,0] = self.dt
 
         self.Cd_i[0,0:12] = self.Cd_eq
 
@@ -579,15 +575,6 @@ class Quadrotor_Integrator(object):
     def continuous_time_nonlinear_dynamics(self, x0, u):
         out = self.Integrator(x0=x0, p=ca.vertcat(u, self.w))
         return out["xf"]
-
-    
-
-    
-
-        # Re-generate dynamics
-        self.set_integrators()
-        self.set_discrete_time_system()
-        #self.set_augmented_discrete_system()
 
     #===============================================#
     #            Kalman Filter modules              # 
