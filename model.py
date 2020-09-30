@@ -558,7 +558,15 @@ class Quadrotor_Integrator(object):
         self.Bc = Bc 
 
         return Ac @ x + Bc @ u
-        
+
+    def set_reference(self, ref):	
+        """	
+        Simple method to set the new system reference.	
+        :param ref: desired reference [m]	
+        :type ref: float or casadi.DM 1x1	
+        """	
+        self.x_d = ref
+    
     def pendulum_augmented_dynamics(self, x, u):
         """Augmented pendulum system dynamics
 
@@ -571,6 +579,18 @@ class Quadrotor_Integrator(object):
         """
 
         return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i * self.w
+
+    def get_discrete_system_matrices_at_eq(self):	
+        """	
+        Evaluate the discretized matrices at the equilibrium point	
+        :return: A,B,C matrices for equilibrium point	
+        :rtype: casadi.DM 	
+        """	
+        Ad_eq = self.Ad(self.x_eq, self.u_eq, self.w)	
+        Bd_eq = self.Bd(self.x_eq, self.u_eq, self.w)	
+        Bw_eq = self.Bw(self.x_eq, self.u_eq, self.w)	
+
+        return Ad_eq, Bd_eq, Bw_eq, self.Cd_eq
 
     def set_augmented_discrete_system(self):
         """
@@ -606,6 +626,47 @@ class Quadrotor_Integrator(object):
 
         self.Cd_i[0,0:12] = self.Cd_eq
 
+     def discrete_nl_dynamics(self, x0, u):	
+        """Discrete time nonlinear integrator	
+        :param x0: starting state	
+        :type x0: ca.DM	
+        :param u: control input	
+        :type u: ca.DM	
+        :return: state at the final sampling interval time	
+        :rtype: ca.DM	
+        """	
+        out = self.Integrator(x0=x0, p=u)	
+        return out["xf"]	
+
+    def discrete_time_dynamics(self,x0,u):	
+        """ 	
+        Performs a discrete time iteration step.	
+        :param x0: initial state	
+        :type x0: 4x1 ( list [a, b, c, d] , ca.MX )	
+        :param u: control input	
+        :type u: scalar, 1x1	
+        :return: next discrete time state	
+        :rtype: 4x1, ca.DM	
+        """	
+
+        return self.Ad(self.x_eq, self.u_eq, self.w) @ x0 + \	
+                self.Bd(self.x_eq, self.u_eq, self.w) @ u + \	
+                self.Bw(self.x_eq, self.u_eq, self.w) @ self.w	
+
+    def enable_disturbance(self, w=0.01):	
+        """	
+        Enable system disturbance as a wind force.	
+        :param w: disturbance magnitude, defaults to 0.1	
+        :type w: float, optional	
+        """	
+
+
+        # Activate disturbance	
+        self.w = w	
+        # Re-generate dynamics	
+        self.set_integrators()	
+        self.set_discrete_time_system()	
+        self.set_augmented_discrete_system()
     
 
     def quadrotor_linear_dynamics_with_disturbance(self, x, u):
