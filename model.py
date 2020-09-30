@@ -400,7 +400,6 @@ class Quadrotor_Integrator(object):
         print("quadrotor class initialized")
         print(self)                         # You can comment this line
 
-<<<<<<< HEAD
     def __str__(self):
         return """
                 NON-LINEAR                                
@@ -443,8 +442,6 @@ class Quadrotor_Integrator(object):
             dae = {'x': x_ag, 'ode': self.model_ag(x_ag,u), 'p':ca.vertcat(u)}
             self.Integrator_ag = ca.integrator('integrator', 'cvodes', dae, options)
 
-=======
->>>>>>> 6325e195e60b27180d0f4c7a46223a4425d51ac4
     def set_discrete_time_system(self):
         """
         Set discrete-time system matrices from linear continuous dynamics.
@@ -587,14 +584,10 @@ class Quadrotor_Integrator(object):
 
     
 
-<<<<<<< HEAD
         # Re-generate dynamics
         self.set_integrators()
         self.set_discrete_time_system()
         #self.set_augmented_discrete_system()
-=======
-    
->>>>>>> 6325e195e60b27180d0f4c7a46223a4425d51ac4
 
     #===============================================#
     #            Kalman Filter modules              # 
