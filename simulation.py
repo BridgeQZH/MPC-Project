@@ -29,7 +29,7 @@ class EmbeddedSimEnvironment(object):
         # Plotting definitions 
         self.plt_window = float("inf")    # running plot window, in seconds, or float("inf")
 
-    def run(self, x0=[0.5,0.5,0.5,0,0,0,0,0,0,0,0,0]):
+    def run(self, x0):
         """
         Run simulator with specified system dynamics and control function.
         """

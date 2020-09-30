@@ -58,7 +58,7 @@ if (ENABLE_AUGMENTED == True):
         w = ca.DM.zeros(4,1)+0.001
         quadrotor_disturbance.enable_disturbance(w=w)
         sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
-                                        dynamics=quadrotor_disturbance.discrete_time_dynamics,    # augmented
+                                        dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,    # augmented
                                         controller=ctl.mpc_controller,
                                         time = 10)
         sim_env_full_dist.set_window(10)
