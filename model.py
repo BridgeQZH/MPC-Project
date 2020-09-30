@@ -340,8 +340,8 @@ class Quadrotor_Integrator(object):
         self.omega_d = ca.DM.zeros(3,1)           # angular velocity reference
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d)        # system state reference
         self.x_d[2] = 0.5
-        self.x_d[1] = 0.5
-        self.x_d[0] = 0.5
+        # self.x_d[1] = 0.5
+        # self.x_d[0] = 0.5
         self.w = 0.0
 
         # quadrotor Parameters
@@ -597,11 +597,11 @@ class Quadrotor_Integrator(object):
         :return: state time derivative
         :rtype: casadi.DM or casadi.MX, depending on inputs
         """
-        #TODO: use ca.vertsplit() to make variables' assignments elegant
-        p_x, p_y, p_z = x[0], x[1], x[2]
-        v_x, v_y, v_z = x[3], x[4], x[5]
-        theta, phi, psi = x[6], x[7], x[8]
-        w_x, w_y, w_z = x[9], x[10], x[11]
+        
+        p_x, p_y, p_z = ca.vertsplit(x[0:3])
+        v_x, v_y, v_z = ca.vertsplit(x[3:6])
+        theta, phi, psi = ca.vertsplit(x[6:9])
+        w_x, w_y, w_z = ca.vertsplit(x[9:12])
 
         f_z, tau_x, tau_y, tau_z = ca.vertsplit(u)
 

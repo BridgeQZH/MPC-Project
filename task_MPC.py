@@ -15,12 +15,12 @@ quadrotor_nl = Quadrotor_Integrator()
 # Get the system discrete-time dynamics
 A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 
-Q = np.diag([1000, 1000, 1000,
-             1000, 1000, 1000,
+Q = np.diag([100, 100, 100,
+             100, 100, 100,
              1000, 1000, 1000,
              1000, 1000, 1000])
 # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
-R = np.diag([10, 1000, 1000, 1000])
+R = np.diag([1, 1, 1, 1])
 # R = np.diag([0,0,0,0])
 
 A_np = np.asarray(A)
@@ -29,26 +29,33 @@ B_np = np.asarray(B)
 P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_NONLINEAR == True):
-        ctl = MPC(model=quadrotor_nl, 
-        dynamics=quadrotor_nl.quadrotor_nonlinear_dynamics,
+        ctl = MPC(model = quadrotor_nl, 
+        dynamics = quadrotor_nl.quadrotor_nonlinear_dynamics,
         Q = Q , R = R, P = P,
-        horizon=3,
+        horizon=7,
         ulb=None, uub=None, 
         xlb=None, 
         xub=None,
         terminal_constraint=None)
 
 
-        sim_env = EmbeddedSimEnvironment(model=quadrotor, 
-                                        dynamics=quadrotor.discrete_time_dynamics,
+        sim_env = EmbeddedSimEnvironment(model=quadrotor_nl, 
+                                        dynamics=quadrotor_nl.quadrotor_nonlinear_dynamics,
                                         controller=ctl.mpc_controller,
                                         time = 6)
 
         # t, y, u = sim_env.run([0,0,0,0,0,0,0,0,quadrotor.m * quadrotor.g,0,0,0])
         x0=[0,0,0,0,0,0,0,0,0,0,0,0]
-        t, y, u = sim_env.run(x0=x0)   
+        t, y, u = sim_env.run(x0=x0)  
+
+
+
+
+
+
+        
+# Linear Situation 
 else:
-# Instantiate controller
         ctl = MPC(model=quadrotor, 
                 dynamics=quadrotor.discrete_time_dynamics, 
                 Q = Q , R = R, P = P,
@@ -58,12 +65,10 @@ else:
                 xub=None,
                 terminal_constraint=None)
 
-        # Part II - Simple Inverted Pendulum
         sim_env = EmbeddedSimEnvironment(model=quadrotor, 
                                         dynamics=quadrotor.discrete_time_dynamics,
                                         controller=ctl.mpc_controller,
                                         time = 6)
 
-        # t, y, u = sim_env.run([0,0,0,0,0,0,0,0,quadrotor.m * quadrotor.g,0,0,0])
         x0=[0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env.run(x0=x0)
