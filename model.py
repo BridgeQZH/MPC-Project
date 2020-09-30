@@ -200,7 +200,11 @@ class Quadrotor(object):
         ### Build Bwc
         l = self.l
         k = 0.005
-        Bwc_disturbance = np.array([[1, 1, 1, 1], [-l, 0, l, 0], [0, l, 0, -l], [-k, k, -k, k]])
+        Bwc_disturbance = ca.MX.zeros(4,4)
+        Bwc_disturbance[0,0:4] = [1,1,1,1]
+        Bwc_disturbance[1,0:4] = [-l,0,l,0]
+        Bwc_disturbance[2,0:4] = [0,l,0,-l]
+        Bwc_disturbance[3,0:4] = [-k, k, -k, k]
         Bwc = Bc @ Bwc_disturbance
         ### Store matrices as class variables
         self.Ac = Ac
