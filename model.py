@@ -337,7 +337,7 @@ class Quadrotor(object):
 
         # Re-generate integrators for dynamics with disturbance
         self.set_integrators()
-        # self.set_augmented_discrete_system()
+        self.set_augmented_discrete_system()
 
     pass
 
@@ -475,7 +475,103 @@ class Quadrotor_Integrator(object):
         #Cd_eq[0,3] = 1
 
         self.Cd_eq = Cd_eq
-    
+
+    def quadrotor_linear_dynamics(self, x, u):  
+        """ 
+        quadrotor continuous-time linearized dynamics.
+
+        :param x: state
+        :type x: MX variable, 12x1
+        :param u: control input
+        :type u: MX variable, 4x1
+        :return: dot(x)
+        :rtype: MX variable, 12x1
+        """
+
+        theta, phi, psi = ca.vertsplit(self.alpha)
+        w_x, w_y, w_z = ca.vertsplit(self.omega)
+
+        f_z = self.g * self.m   # input control at equilibrium point
+        # m = self.m
+        Ac = ca.MX.zeros(12,12)
+        Bc = ca.MX.zeros(12,4)
+        J_a = ca.MX.zeros(3,3)
+        J_b = ca.MX.zeros(3,3)
+        J_c = ca.MX.zeros(3,3)
+        J_d = ca.MX.zeros(3,3)
+        
+        J_a[0,0] = ca.cos(theta) * ca.sin(psi) - ca.sin(theta) * ca.sin(phi) * ca.cos(psi)
+        J_a[0,1] = ca.cos(theta) * ca.cos(phi) * ca.cos(psi)
+        J_a[0,2] = ca.sin(theta) * ca.cos(psi) - ca.cos(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,0] = -ca.cos(theta) * ca.cos(psi) - ca.sin(theta) * ca.sin(phi) * ca.sin(psi)
+        J_a[1,1] = ca.cos(theta) * ca.cos(phi) * ca.sin(psi)
+        J_a[1,2] = ca.sin(theta) * ca.sin(psi) + ca.cos(theta) * ca.sin(phi) * ca.cos(psi)
+        J_a[2,0] = -ca.sin(theta) * ca.cos(phi)
+        J_a[2,1] = -ca.cos(theta) * ca.sin(phi)
+        J_a *= f_z / self.m 
+
+        J_b[0,0] = (1.0/ca.cos(theta))**2 * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[0,1] = ca.tan(theta) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
+        J_b[1,1] = - w_y * ca.sin(phi) - w_z * ca.cos(phi)
+        J_b[2,0] = (1.0 / ca.cos(theta)) * ca.tan(theta) * (w_y * ca.sin(phi) + w_z * ca.cos(phi))
+        J_b[2,1] = (1.0 / ca.cos(theta)) * (w_y * ca.cos(phi) - w_z * ca.sin(phi))
+        
+        J_c[0,0] = 1.0
+        J_c[0,1] = ca.sin(phi) * ca.tan(theta)
+        J_c[0,2] = ca.cos(phi) * ca.tan(theta)
+        J_c[1,1] = ca.cos(phi)
+        J_c[1,2] = -ca.sin(phi)
+        J_c[2,1] = 1.0 / ca.cos(theta) * ca.sin(phi)
+        J_c[2,2] = 1.0 / ca.cos(theta) * ca.cos(phi)
+
+        J_d[0,1] = w_z * (self.M_y - self.M_z) / self.M_x
+        J_d[0,2] = w_y * (self.M_y - self.M_z) / self.M_x
+        J_d[1,0] = w_z * (self.M_z - self.M_x) / self.M_y
+        J_d[1,2] = w_x * (self.M_z - self.M_x) / self.M_y
+        J_d[2,0] = w_y * (self.M_x - self.M_y) / self.M_z
+        J_d[2,1] = w_x * (self.M_x - self.M_y) / self.M_z
+
+        ### Build Ac matrix
+        Ac[0:3,3:6] = ca.MX.eye(3)
+        Ac[3:6,6:9] = J_a 
+        Ac[6:9,6:9] = J_b
+        Ac[6:9,9:12] = J_c
+        Ac[9:12,9:12] = J_d
+
+        ### Build Bc matrix
+        J_e = ca.MX.zeros(3,1)
+        J_f = ca.MX.zeros(3,3)
+
+        J_e[0,0] = (ca.sin(theta)*ca.sin(psi)+ ca.sin(phi)*ca.cos(psi)*ca.cos(theta))/self.m
+        J_e[1,0] = (-ca.sin(theta)*ca.cos(psi)+ ca.sin(phi)*ca.cos(theta)*ca.sin(psi))/self.m
+        J_e[2,0] = ca.cos(theta)*ca.cos(phi)/self.m
+
+        J_f[0,0] = 1.0/self.M_x
+        J_f[1,1] = 1.0/self.M_y
+        J_f[2,2] = 1.0/self.M_z
+
+        Bc[3:6,0] = J_e
+        Bc[9:12,1:4] = J_f
+
+        ### Store matrices as class variables
+        self.Ac = Ac
+        self.Bc = Bc 
+
+        return Ac @ x + Bc @ u
+        
+    def pendulum_augmented_dynamics(self, x, u):
+        """Augmented pendulum system dynamics
+
+        :param x: state
+        :type x: casadi.DM
+        :param u: control input
+        :type u: casadi.DM
+        :return: next state
+        :rtype: casadi.DM
+        """
+
+        return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i * self.w
+
     def set_augmented_discrete_system(self):
         """
         quadrotor dynamics with integral action.
