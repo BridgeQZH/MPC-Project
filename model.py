@@ -116,7 +116,7 @@ class Quadrotor(object):
                             self.Integrator(x0=x, p=u)['xf'], u)])
 
 
-    def quadrotor_linear_dynamics(self, x, u):  
+    def quadrotor_linear_dynamics(self, x, u, w):  
         """ 
         quadrotor continuous-time linearized dynamics.
 
@@ -135,6 +135,9 @@ class Quadrotor(object):
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
+        Bwc = ca.MX.zeros(12,4)
+        Awc = ca.MX.zeros(12,12)
+
         J_a = ca.MX.zeros(3,3)
         J_b = ca.MX.zeros(3,3)
         J_c = ca.MX.zeros(3,3)
@@ -193,11 +196,18 @@ class Quadrotor(object):
         Bc[3:6,0] = J_e
         Bc[9:12,1:4] = J_f
 
+        ### Build Bwc
+        l = self.l
+        k = 0.005
+        Bwc_disturbance = np.array([[1, 1, 1, 1], [-l, 0, l, 0], [0, l, 0, -l], [-k, k, -k, k]])
+        Bwc = Bc @ Bwc_disturbance
         ### Store matrices as class variables
         self.Ac = Ac
-        self.Bc = Bc 
+        self.Bc = Bc
+        self.Bwc = Bwc
+        self.Awc = Awc  
 
-        return Ac @ x + Bc @ u
+        return Ac @ x + Bc @ u + Bwc @ w
 
     def quadrotor_nonlinear_dynamics(self, x, u, *_):
         """
@@ -750,7 +760,7 @@ class Quadrotor_Integrator(object):
         self.Q_KF = Q
         self.R_KF = R
 
-    def init_kf(self, x=np.array([[0,0,0,0]])):
+    def init_kf(self,  ):
         """
         Initialize the Kalman Filter estimator.
         """
