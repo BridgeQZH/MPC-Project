@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+import casadi as ca
 
 from model import Quadrotor, Quadrotor_Integrator
 from controller import Controller
@@ -11,25 +12,25 @@ ENABLE_LINEAR = False
 ENABLE_AUGMENTED = True
 
 # Create pendulum and controller objects
-# quadrotor = Quadrotor()
+quadrotor = Quadrotor()
 quadrotor_disturbance = Quadrotor_Integrator()
 # ctl = Controller()
 
 # Get the system discrete-time dynamics
-# A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
+A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
 
-# Q = np.diag([100, 100, 100,
-#              100, 100, 100,
-#              1000, 1000, 1000,
-#              1000, 1000, 1000])
-# # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
-# R = np.diag([1, 1, 1, 1])
-# # R = np.diag([0,0,0,0])
+Q = np.diag([100, 100, 100,
+             100, 100, 100,
+             1000, 1000, 1000,
+             1000, 1000, 1000])
+# R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
+R = np.diag([1, 1, 1, 1])
+# R = np.diag([0,0,0,0])
 
-# A_np = np.asarray(A)
-# B_np = np.asarray(B)
+A_np = np.asarray(A)
+B_np = np.asarray(B)
 
-# P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
+P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_AUGMENTED == True):
         A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
@@ -47,20 +48,22 @@ if (ENABLE_AUGMENTED == True):
         P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
         # Instantiate controller
         ctl = MPC(model=quadrotor_disturbance, 
-            dynamics=quadrotor_disturbance.pendulum_augmented_dynamics,   # augmented
+            dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,   # augmented
             horizon=8,
             Q = Q , R = R, P = P,
             ulb=None, uub=None, 
             xlb=None,   
             xub=None,       
             terminal_constraint=None)
-        quadrotor_disturbance.enable_disturbance(w=0.05)
+        w = ca.DM.zeros(4,1)+0.001
+        quadrotor_disturbance.enable_disturbance(w=w)
         sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
-                                        dynamics=quadrotor_disturbance.pendulum_augmented_dynamics,    # augmented
+                                        dynamics=quadrotor_disturbance.discrete_time_dynamics,    # augmented
                                         controller=ctl.mpc_controller,
                                         time = 10)
         sim_env_full_dist.set_window(10)
-        sim_env_full_dist.run([0,0,0,0,0])
+        x0=[0,0,0,0,0,0,0,0,0,0,0,0,0]
+        t, y, u = sim_env_full_dist.run(x0=x0)  
 
 '''
 Nonlinear situation

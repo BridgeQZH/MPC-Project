@@ -82,14 +82,13 @@ class Quadrotor(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 4)
 
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
                    "tf" : self.dt}
 
         # Create linear dynamics integrator
-        dae = {'x': x, 'ode': self.model(x,u,w), 'p':ca.vertcat(u,w)}
+        dae = {'x': x, 'ode': self.model(x,u), 'p':ca.vertcat(u)}
         self.Integrator = ca.integrator('integrator', 'cvodes', dae, options)
 
         # Create nonlinear dynamics integrator
@@ -117,7 +116,7 @@ class Quadrotor(object):
                             self.Integrator(x0=x, p=u)['xf'], u)])
 
 
-    def quadrotor_linear_dynamics(self, x, u, w):  
+    def quadrotor_linear_dynamics(self, x, u):  
         """ 
         quadrotor continuous-time linearized dynamics.
 
@@ -136,8 +135,6 @@ class Quadrotor(object):
         # m = self.m
         Ac = ca.MX.zeros(12,12)
         Bc = ca.MX.zeros(12,4)
-        Bwc = ca.MX.zeros(12,4)
-        Awc = ca.MX.zeros(12,12)
 
         J_a = ca.MX.zeros(3,3)
         J_b = ca.MX.zeros(3,3)
@@ -197,22 +194,10 @@ class Quadrotor(object):
         Bc[3:6,0] = J_e
         Bc[9:12,1:4] = J_f
 
-        ### Build Bwc
-        l = self.l
-        k = 0.005
-        Bwc_disturbance = ca.MX.zeros(4,4)
-        Bwc_disturbance[0,0:4] = [1,1,1,1]
-        Bwc_disturbance[1,0:4] = [-l,0,l,0]
-        Bwc_disturbance[2,0:4] = [0,l,0,-l]
-        Bwc_disturbance[3,0:4] = [-k, k, -k, k]
-        Bwc = Bc @ Bwc_disturbance
-        ### Store matrices as class variables
         self.Ac = Ac
         self.Bc = Bc
-        self.Bwc = Bwc
-        self.Awc = Awc  
 
-        return Ac @ x + Bc @ u + Bwc @ w
+        return Ac @ x + Bc @ u
 
     def quadrotor_nonlinear_dynamics(self, x, u, *_):
         """
@@ -388,7 +373,7 @@ class Quadrotor_Integrator(object):
         self.x_d[2] = 0.5
         # self.x_d[1] = 0.5
         # self.x_d[0] = 0.5
-        self.w = 0.0
+        self.w = ca.DM.zeros(4,1)
 
         # quadrotor Parameters
         self.m = 1.4            # quadrotor mass
@@ -645,7 +630,7 @@ class Quadrotor_Integrator(object):
         """	
         self.x_d = ref
     
-    def pendulum_augmented_dynamics(self, x, u):
+    def quadrotor_augmented_dynamics(self, x, u):
         """Augmented pendulum system dynamics
 
         :param x: state
@@ -656,7 +641,7 @@ class Quadrotor_Integrator(object):
         :rtype: casadi.DM
         """
 
-        return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i * self.w
+        return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i @ self.w
 
     def get_discrete_system_matrices_at_eq(self):	
         """	
@@ -729,7 +714,7 @@ class Quadrotor_Integrator(object):
 
         return self.Ad(self.x_eq, self.u_eq, self.w) @ x0 + self.Bd(self.x_eq, self.u_eq, self.w) @ u + self.Bw(self.x_eq, self.u_eq, self.w) @ self.w	
 
-    def enable_disturbance(self, w=0.01):	
+    def enable_disturbance(self, w):	
         """	
         Enable system disturbance as a wind force.	
         :param w: disturbance magnitude, defaults to 0.1	
@@ -763,7 +748,7 @@ class Quadrotor_Integrator(object):
         :rtype: casadi.DM
         """
 
-        return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i * self.w
+        return self.Ad_i @ x + self.Bd_i @ u + self.R_i * self.x_d + self.Bw_i @ self.w
 
 
     def set_equilibrium_point(self, x_eq, u_eq):
