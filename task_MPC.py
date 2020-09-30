@@ -6,10 +6,13 @@ from controller import Controller
 from simulation import EmbeddedSimEnvironment
 from mpc import MPC
 
-ENABLE_NONLINEAR = True
+ENABLE_NONLINEAR = False
+ENABLE_LINEAR = False
+ENABLE_AUGMENTED = True
+
 # Create pendulum and controller objects
 quadrotor = Quadrotor()
-# quadrotor_nl = Quadrotor_Integrator()
+quadrotor_disturbance = Quadrotor_Integrator()
 # ctl = Controller()
 
 # Get the system discrete-time dynamics
@@ -28,7 +31,29 @@ B_np = np.asarray(B)
 
 P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
-if (ENABLE_NONLINEAR == True):
+if (ENABLE_AUGMENTED == True):
+        A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
+        # Instantiate controller
+        ctl = MPC(model=quadrotor_disturbance, 
+            dynamics=quadrotor_disturbance.pendulum_augmented_dynamics,   # augmented
+            horizon=8,
+            Q = Q , R = R, P = P,
+            ulb=None, uub=None, 
+            xlb=None,   
+            xub=None,       
+            terminal_constraint=None)
+        quadrotor_disturbance.enable_disturbance(w=0.05)
+        sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
+                                        dynamics=quadrotor_disturbance.pendulum_augmented_dynamics,    # augmented
+                                        controller=ctl.mpc_controller,
+                                        time = 10)
+        sim_env_full_dist.set_window(10)
+        sim_env_full_dist.run([0,0,0,0,0])
+
+'''
+Nonlinear situation
+'''
+elif (ENABLE_NONLINEAR == True):
         ctl = MPC(model = quadrotor, 
         dynamics = quadrotor.discrete_nl_dynamics,
         Q = Q, R = R, P = P,
@@ -38,7 +63,6 @@ if (ENABLE_NONLINEAR == True):
         xub=None,
         terminal_constraint=None)
 
-
         sim_env = EmbeddedSimEnvironment(model=quadrotor, 
                                         dynamics=quadrotor.discrete_nl_dynamics,
                                         controller=ctl.mpc_controller,
@@ -47,10 +71,11 @@ if (ENABLE_NONLINEAR == True):
         # t, y, u = sim_env.run([0,0,0,0,0,0,0,0,quadrotor.m * quadrotor.g,0,0,0])
         x0=[0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env.run(x0=x0)  
-
         
-# Linear Situation 
-else:
+'''
+Linear situation
+'''
+elif(ENABLE_LINEAR == True):
         ctl = MPC(model=quadrotor, 
                 dynamics=quadrotor.discrete_time_dynamics, 
                 Q = Q , R = R, P = P,
@@ -67,3 +92,5 @@ else:
 
         x0=[0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env.run(x0=x0)
+
+
