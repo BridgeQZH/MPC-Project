@@ -82,13 +82,14 @@ class Quadrotor(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
+        w = ca.MX.sym('w', 4)
 
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
                    "tf" : self.dt}
 
         # Create linear dynamics integrator
-        dae = {'x': x, 'ode': self.model(x,u), 'p':ca.vertcat(u)}
+        dae = {'x': x, 'ode': self.model(x,u,w), 'p':ca.vertcat(u,w)}
         self.Integrator = ca.integrator('integrator', 'cvodes', dae, options)
 
         # Create nonlinear dynamics integrator
