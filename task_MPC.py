@@ -13,7 +13,38 @@ ENABLE_AUGMENTED = True
 # Create pendulum and controller objects
 quadrotor = Quadrotor()
 quadrotor_disturbance = Quadrotor_Integrator()
-# ctl = Controller()
+if (ENABLE_AUGMENTED == True):
+        A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
+        Q = np.diag([   20000, 20000, 20000,
+                        1000, 10000, 1000,
+                        500, 500, 100000,
+                        1000, 10000, 1000, 0.00001])
+        # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
+        R = np.diag([1, 1, 1, 1])
+        # R = np.diag([0,0,0,0])
+
+        A_np = np.asarray(A)
+        B_np = np.asarray(B)
+
+        P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
+        # Instantiate controller
+        ctl = MPC(model=quadrotor_disturbance, 
+            dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,   # augmented
+            horizon=7,
+            Q = Q , R = R, P = P,
+            ulb=None, uub=None, 
+            xlb=None,   
+            xub=None,       
+            terminal_constraint=None)
+        w = [0, 0.0001, 0.0005]
+        quadrotor_disturbance.enable_disturbance(w=w)
+        sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
+                                        dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,    # augmented
+                                        controller=ctl.mpc_controller,
+                                        time = 5)
+        # sim_env_full_dist.set_window(10)
+        x0=[0,0,0,0,0,0,0,0,0,0,0,0,0]
+        t, y, u = sim_env_full_dist.run(x0=x0)  
 
 # Get the system discrete-time dynamics
 A, B, C = quadrotor.get_discrete_system_matrices_at_eq()
@@ -30,40 +61,6 @@ A_np = np.asarray(A)
 B_np = np.asarray(B)
 
 P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
-
-if (ENABLE_AUGMENTED == True):
-        A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
-        Q = np.diag([   2000, 2000, 2000,
-                        1000, 1000, 1000,
-                        5000, 5000, 10000,
-                        1000, 1000, 1000, 1])
-        # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
-        R = np.diag([1, 1, 1, 1])
-        # R = np.diag([0,0,0,0])
-
-        A_np = np.asarray(A)
-        B_np = np.asarray(B)
-
-        P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
-        # Instantiate controller
-        ctl = MPC(model=quadrotor_disturbance, 
-            dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,   # augmented
-            horizon=5,
-            Q = Q , R = R, P = P,
-            ulb=None, uub=None, 
-            xlb=None,   
-            xub=None,       
-            terminal_constraint=None)
-        w = [0.1,0,0,-0.1]
-        quadrotor_disturbance.enable_disturbance(w=w)
-        sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
-                                        dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,    # augmented
-                                        controller=ctl.mpc_controller,
-                                        time = 10)
-        # sim_env_full_dist.set_window(10)
-        x0=[0,0,0,0,0,0,0,0,0,0,0,0,0]
-        t, y, u = sim_env_full_dist.run(x0=x0)  
-
 '''
 Nonlinear situation
 '''

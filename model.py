@@ -371,9 +371,9 @@ class Quadrotor_Integrator(object):
         self.xixi = 1
         self.x_d = ca.vertcat(self.p_d, self.v_d, self.alpha_d, self.omega_d, self.xixi)        # system state reference
         self.x_d[2] = 0.5
-        # self.x_d[1] = 0.5
-        # self.x_d[0] = 0.5
-        self.w = ca.DM.zeros(4,1)
+        self.x_d[1] = 0.5
+        self.x_d[0] = 0.5
+        self.w = ca.DM.zeros(3,1)
 
         # quadrotor Parameters
         self.m = 1.4            # quadrotor mass
@@ -472,7 +472,7 @@ class Quadrotor_Integrator(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 4)
+        w = ca.MX.sym('w', 3)
         # Integration method - integrator options an be adjusted
         options = {"abstol" : 1e-5, "reltol" : 1e-9, "max_num_steps": 100, 
                    "tf" : self.dt}
@@ -504,7 +504,7 @@ class Quadrotor_Integrator(object):
         # Set CasADi variables
         x = ca.MX.sym('x', 12)
         u = ca.MX.sym('u', 4)
-        w = ca.MX.sym('w', 4)
+        w = ca.MX.sym('w', 3)
     
         # Jacobian of exact discretization
         self.Ad = ca.Function('jac_x_Ad', [x, u, w], [ca.jacobian(
@@ -606,21 +606,25 @@ class Quadrotor_Integrator(object):
         Bc[9:12,1:4] = J_f
 
         ### Build Bwc
-        l = self.l
-        k = 0.5
-        Bwc_disturbance = ca.MX.zeros(4,4)
-        Bwc_disturbance[0,0:4] = [1,1,1,1]
-        Bwc_disturbance[1,0:4] = [-l,0,l,0]
-        Bwc_disturbance[2,0:4] = [0,l,0,-l]
-        Bwc_disturbance[3,0:4] = [-k, k, -k, k]
-        Bwc = Bc @ Bwc_disturbance
+        # l = self.l
+        # k = self.l
+        # Bwc_dist = ca.MX.zeros(4,4)
+        # Bwc_dist[0,0:4] = [1,1,1,1]
+        # Bwc_dist[1,0:4] = [-l,0,l,0]
+        # Bwc_dist[2,0:4] = [0,l,0,-l]
+        # Bwc_dist[3,0:4] = [-k, k, -k, k]
+        # Bwc = Bc @ Bwc_dist
+        Awc_dist = ca.MX.zeros(12,3)
+        Awc_dist[10, 1] = 1
+        Awc_dist[11, 2] = 1
+        Awc = Ac @ Awc_dist
         ### Store matrices as class variables
         self.Ac = Ac
         self.Bc = Bc
         self.Bwc = Bwc
         self.Awc = Awc  
 
-        return Ac @ x + Bc @ u + Bwc @ w
+        return Ac @ x + Bc @ u + Awc @ w
 
     def set_reference(self, ref):	
         """	
@@ -672,7 +676,7 @@ class Quadrotor_Integrator(object):
         # Instantiate augmented system
         self.Ad_i = ca.DM.zeros(13,13)
         self.Bd_i = ca.DM.zeros(13,4)
-        self.Bw_i = ca.DM.zeros(13,4)
+        self.Bw_i = ca.DM.zeros(13,3)
         self.Cd_i = ca.DM.zeros(1,13)
         self.R_i = ca.DM.zeros(13,1)
 
@@ -683,7 +687,7 @@ class Quadrotor_Integrator(object):
 
         self.Bd_i[0:12,0:4] = Bd_eq
 
-        self.Bw_i[0:12,0:4] = self.Bw(self.x_eq, self.u_eq, self.w)
+        self.Bw_i[0:12,0:3] = self.Bw(self.x_eq, self.u_eq, self.w)
 
         self.R_i[12,0] = self.dt
 
