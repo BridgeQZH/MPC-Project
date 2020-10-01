@@ -33,10 +33,10 @@ P = np.matrix(scipy.linalg.solve_discrete_are(A_np,B_np,Q,R))
 
 if (ENABLE_AUGMENTED == True):
         A, B, Bw, C = quadrotor_disturbance.get_augmented_discrete_system() # used for augmented system
-        Q = np.diag([   2000, 2000, 2000,
-                        1000, 1000, 1000,
-                        5000, 5000, 10000,
-                        1000, 1000, 1000, 1])
+        Q = np.diag([   15000, 15000, 15000,
+                        100, 100, 100,
+                        10, 10, 10,
+                        10, 10, 10, 0.0001])
         # R = np.diag([1.0 / 4, 1.0 / 4, 1.0 / 4, 1.0 / 4])
         R = np.diag([1, 1, 1, 1])
         # R = np.diag([0,0,0,0])
@@ -54,12 +54,12 @@ if (ENABLE_AUGMENTED == True):
             xlb=None,   
             xub=None,       
             terminal_constraint=None)
-        w = [0.1,0,0,-0.1]
+        w = [0.2,-0.05,0.1,0]
         quadrotor_disturbance.enable_disturbance(w=w)
         sim_env_full_dist = EmbeddedSimEnvironment(model=quadrotor_disturbance, 
                                         dynamics=quadrotor_disturbance.quadrotor_augmented_dynamics,    # augmented
                                         controller=ctl.mpc_controller,
-                                        time = 10)
+                                        time = 6)
         # sim_env_full_dist.set_window(10)
         x0=[0,0,0,0,0,0,0,0,0,0,0,0,0]
         t, y, u = sim_env_full_dist.run(x0=x0)  
