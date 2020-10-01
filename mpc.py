@@ -77,11 +77,13 @@ class MPC(object):
             xub = np.full((self.Nx), np.inf)
             xub[6] = np.pi/4 # theta range (roll)
             xub[7] = np.pi/4 # phi range (pitch)
+            xub[8] = 0.02
         if xlb is None:
             xlb = np.full((self.Nx), -np.inf)
             xlb[2] = 0
             xlb[6] = -np.pi/4
             xlb[7] = -np.pi/4
+            xlb[8] = -0.02
         if uub is None:
             uub = [3*model.m*model.g, model.m*model.g*model.l, model.m*model.g*model.l, 0.01]
         if ulb is None:
