@@ -14,6 +14,8 @@ https://www.overleaf.com/4558246567cszckmxgcntc
 
     + ~~Discretize the linear model to get discrete time dynamics.~~
     
-    + Modify simulation.py
+    + ~~Modify simulation.py~~
 
-    + give specific control input and simulate.
+    + ~~give specific control input and simulate.~~
+    
+    + Keep the branches or merge them into master? Motivate your answer!
